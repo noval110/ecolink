@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS impact_records (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  campaign_id BIGINT NOT NULL,
+  organization_id BIGINT NOT NULL,
+  weight NUMERIC(12,2) DEFAULT NULL,
+  co2_reduced NUMERIC(12,2) DEFAULT NULL,
+  recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_ir_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_ir_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns (id) ON DELETE CASCADE,
+  CONSTRAINT fk_ir_org FOREIGN KEY (organization_id) REFERENCES organizations (id) ON DELETE CASCADE
+);

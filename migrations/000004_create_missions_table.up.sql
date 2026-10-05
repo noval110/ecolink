@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS missions (
+  id BIGSERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  type VARCHAR(100) DEFAULT NULL,
+  target_value NUMERIC(12,2) DEFAULT NULL,
+  xp_reward INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE
+);

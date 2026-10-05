@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS campaigners (
+  id BIGSERIAL PRIMARY KEY,
+  campaign_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  status VARCHAR(50) DEFAULT NULL,
+  CONSTRAINT fk_campaigners_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns (id) ON DELETE CASCADE,
+  CONSTRAINT fk_campaigners_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);

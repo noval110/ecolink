@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS waste_bank_members (
+  id BIGSERIAL PRIMARY KEY,
+  waste_bank_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  role VARCHAR(100) DEFAULT NULL,
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_wb_members_wb FOREIGN KEY (waste_bank_id) REFERENCES waste_banks (id) ON DELETE CASCADE,
+  CONSTRAINT fk_wb_members_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);

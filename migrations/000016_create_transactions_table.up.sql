@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS transactions (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  waste_bank_id BIGINT NOT NULL,
+  campaign_id BIGINT DEFAULT NULL,
+  total_weight NUMERIC(12,2) DEFAULT NULL,
+  total_value NUMERIC(15,2) DEFAULT NULL,
+  status VARCHAR(50) DEFAULT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_tx_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_tx_wb FOREIGN KEY (waste_bank_id) REFERENCES waste_banks (id) ON DELETE CASCADE,
+  CONSTRAINT fk_tx_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns (id) ON DELETE SET NULL
+);

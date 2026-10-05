@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS campaigns (
+  id BIGSERIAL PRIMARY KEY,
+  organization_id BIGINT NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  start_date DATE DEFAULT NULL,
+  end_date DATE DEFAULT NULL,
+  target_kg NUMERIC(12,2) DEFAULT NULL,
+  status VARCHAR(50) DEFAULT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_campaigns_org FOREIGN KEY (organization_id) REFERENCES organizations (id) ON DELETE CASCADE
+);

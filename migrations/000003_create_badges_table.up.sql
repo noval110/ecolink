@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS badges (
+  id BIGSERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  icon_url VARCHAR(255) DEFAULT NULL,
+  criteria TEXT
+);
