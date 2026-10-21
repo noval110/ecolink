@@ -7,11 +7,26 @@ import (
 )
 
 func RegisterRoutes(e *echo.Echo) {
+	registerRoutes(
+		e,
+		handlers.NewAuthHandler(nil),
+	)
+}
+
+func RegisterRoutesWithAuth(
+	e *echo.Echo,
+	authHandler *handlers.AuthHandler,
+) {
+	registerRoutes(e, authHandler)
+}
+
+func registerRoutes(
+	e *echo.Echo,
+	authHandler *handlers.AuthHandler,
+) {
 	api := e.Group("/api")
 
 	api.GET("/health", handlers.GetHealth)
-
-	authHandler := handlers.NewAuthHandler()
 
 	auth := api.Group("/auth")
 	auth.POST("/register", authHandler.Register)

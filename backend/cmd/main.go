@@ -7,19 +7,43 @@ import (
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 
 	"github.com/noval110/ecolink/backend/config"
+	"github.com/noval110/ecolink/backend/database"
+	"github.com/noval110/ecolink/backend/handlers"
+	"github.com/noval110/ecolink/backend/repositories"
 	"github.com/noval110/ecolink/backend/routes"
+	"github.com/noval110/ecolink/backend/services"
 )
 
 func main() {
 	cfg := config.LoadConfig()
 
+	db, err := database.ConnectPostgres(cfg)
+	if err != nil {
+		panic("failed to connect PostgreSQL: " + err.Error())
+	}
+	defer db.Close()
+
+	authRepository := repositories.NewAuthRepository(db)
+	authService := services.NewAuthService(
+		authRepository,
+		cfg.JWTSecret,
+	)
+	authHandler := handlers.NewAuthHandler(authService)
+
 	e := echo.New()
+
+	e.Logger.Info("PostgreSQL connected successfully")
+
 	e.Use(echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
-		AllowOrigins: []string{"http://localhost:5173"},
+		AllowOrigins: []string{
+			"http://localhost:5173",
+		},
 		AllowMethods: []string{
 			http.MethodGet,
 			http.MethodPost,
 			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
 			http.MethodOptions,
 		},
 		AllowHeaders: []string{
@@ -30,7 +54,7 @@ func main() {
 		},
 	}))
 
-	routes.RegisterRoutes(e)
+	routes.RegisterRoutesWithAuth(e, authHandler)
 
 	e.Logger.Fatal(e.Start(":" + cfg.AppPort))
 }
