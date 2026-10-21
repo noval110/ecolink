@@ -23,6 +23,113 @@ func NewTransactionDBHandler(
 	}
 }
 
+func (h *TransactionDBHandler) MyTransactions(
+	c echo.Context,
+) error {
+	userID, ok := c.Get("user_id").(int64)
+	if !ok {
+		return utils.ErrorResponse(
+			c,
+			http.StatusUnauthorized,
+			"Invalid authenticated user",
+		)
+	}
+
+	status := c.QueryParam("status")
+
+	if status != "" &&
+		status != "pending" &&
+		status != "verified" {
+		return utils.ErrorResponse(
+			c,
+			http.StatusBadRequest,
+			"Status must be pending or verified",
+		)
+	}
+
+	transactions, err := h.repository.ListByUser(
+		c.Request().Context(),
+		userID,
+		status,
+	)
+	if err != nil {
+		return utils.ErrorResponse(
+			c,
+			http.StatusInternalServerError,
+			"Failed to load transactions",
+		)
+	}
+
+	return utils.SuccessResponse(
+		c,
+		http.StatusOK,
+		"Transactions loaded",
+		transactions,
+	)
+}
+
+func (h *TransactionDBHandler) Detail(
+	c echo.Context,
+) error {
+	userID, ok := c.Get("user_id").(int64)
+	if !ok {
+		return utils.ErrorResponse(
+			c,
+			http.StatusUnauthorized,
+			"Invalid authenticated user",
+		)
+	}
+
+	transactionID, err := strconv.ParseInt(
+		c.Param("id"),
+		10,
+		64,
+	)
+	if err != nil {
+		return utils.ErrorResponse(
+			c,
+			http.StatusBadRequest,
+			"Invalid transaction ID",
+		)
+	}
+
+	transaction, err := h.repository.GetByID(
+		c.Request().Context(),
+		transactionID,
+	)
+	if err != nil {
+		return utils.ErrorResponse(
+			c,
+			http.StatusInternalServerError,
+			"Failed to load transaction",
+		)
+	}
+
+	if transaction == nil {
+		return utils.NotFoundResponse(
+			c,
+			"Transaction not found",
+		)
+	}
+
+	role, _ := c.Get("role").(string)
+
+	if role == "user" && transaction.UserID != userID {
+		return utils.ErrorResponse(
+			c,
+			http.StatusForbidden,
+			"You cannot access this transaction",
+		)
+	}
+
+	return utils.SuccessResponse(
+		c,
+		http.StatusOK,
+		"Transaction detail loaded",
+		transaction,
+	)
+}
+
 type createDBTransactionItemRequest struct {
 	WasteCategoryID int64   `json:"waste_category_id"`
 	Weight          float64 `json:"weight"`

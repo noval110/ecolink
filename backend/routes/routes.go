@@ -81,7 +81,17 @@ func registerRoutes(
 	}
 	me.GET("/passport", handlers.GetPassport)
 	me.GET("/impact", handlers.GetMyImpact)
-	me.GET("/transactions", handlers.GetMyTransactions)
+	if transactionHandler != nil && jwtSecret != "" {
+		me.GET(
+			"/transactions",
+			transactionHandler.MyTransactions,
+		)
+	} else {
+		me.GET(
+			"/transactions",
+			handlers.GetMyTransactions,
+		)
+	}
 
 	if wasteBankHandler != nil {
 		api.GET("/waste-banks", wasteBankHandler.List)
@@ -163,7 +173,18 @@ func registerRoutes(
 			handlers.VerifyTransaction,
 		)
 	}
-	api.GET("/transactions/:id", handlers.GetTransactionByID)
+	if transactionHandler != nil && jwtSecret != "" {
+		api.GET(
+			"/transactions/:id",
+			transactionHandler.Detail,
+			middleware.RequireAuth(jwtSecret),
+		)
+	} else {
+		api.GET(
+			"/transactions/:id",
+			handlers.GetTransactionByID,
+		)
+	}
 
 	api.GET("/organizations/:id/dashboard", handlers.GetOrganizationDashboard)
 }

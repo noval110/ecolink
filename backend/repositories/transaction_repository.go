@@ -50,6 +50,33 @@ type TransactionRepository struct {
 	db *pgxpool.Pool
 }
 
+type TransactionHistoryItem struct {
+	ID          int64     `json:"id"`
+	WasteBankID int64     `json:"waste_bank_id"`
+	WasteBank   string    `json:"waste_bank"`
+	CampaignID  *int64    `json:"campaign_id"`
+	Campaign    *string   `json:"campaign,omitempty"`
+	TotalWeight float64   `json:"total_weight"`
+	TotalValue  float64   `json:"total_value"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type TransactionDetail struct {
+	ID          int64                    `json:"transaction_id"`
+	UserID      int64                    `json:"user_id"`
+	UserName    string                   `json:"user_name"`
+	WasteBankID int64                    `json:"waste_bank_id"`
+	WasteBank   string                   `json:"waste_bank"`
+	CampaignID  *int64                   `json:"campaign_id"`
+	Campaign    *string                  `json:"campaign,omitempty"`
+	TotalWeight float64                  `json:"total_weight"`
+	TotalValue  float64                  `json:"total_value"`
+	Status      string                   `json:"status"`
+	Items       []CreatedTransactionItem `json:"items"`
+	CreatedAt   time.Time                `json:"created_at"`
+}
+
 type VerifiedTransaction struct {
 	ID                    int64   `json:"transaction_id"`
 	Status                string  `json:"status"`
@@ -66,6 +93,166 @@ func NewTransactionRepository(
 	return &TransactionRepository{
 		db: db,
 	}
+}
+
+func (r *TransactionRepository) ListByUser(
+	ctx context.Context,
+	userID int64,
+	status string,
+) ([]TransactionHistoryItem, error) {
+	query := `
+		SELECT
+			t.id,
+			t.waste_bank_id,
+			wb.name,
+			t.campaign_id,
+			c.title,
+			COALESCE(t.total_weight, 0)::float8,
+			COALESCE(t.total_value, 0)::float8,
+			t.status,
+			t.created_at
+		FROM transactions t
+		JOIN waste_banks wb
+			ON wb.id = t.waste_bank_id
+		LEFT JOIN campaigns c
+			ON c.id = t.campaign_id
+		WHERE t.user_id = $1
+	`
+
+	args := []any{userID}
+
+	if status != "" {
+		query += ` AND t.status = $2`
+		args = append(args, status)
+	}
+
+	query += ` ORDER BY t.created_at DESC`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]TransactionHistoryItem, 0)
+
+	for rows.Next() {
+		var item TransactionHistoryItem
+
+		if err := rows.Scan(
+			&item.ID,
+			&item.WasteBankID,
+			&item.WasteBank,
+			&item.CampaignID,
+			&item.Campaign,
+			&item.TotalWeight,
+			&item.TotalValue,
+			&item.Status,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		result = append(result, item)
+	}
+
+	return result, rows.Err()
+}
+
+func (r *TransactionRepository) GetByID(
+	ctx context.Context,
+	transactionID int64,
+) (*TransactionDetail, error) {
+	result := &TransactionDetail{}
+
+	err := r.db.QueryRow(
+		ctx,
+		`
+		SELECT
+			t.id,
+			t.user_id,
+			u.full_name,
+			t.waste_bank_id,
+			wb.name,
+			t.campaign_id,
+			c.title,
+			COALESCE(t.total_weight, 0)::float8,
+			COALESCE(t.total_value, 0)::float8,
+			t.status,
+			t.created_at
+		FROM transactions t
+		JOIN users u
+			ON u.id = t.user_id
+		JOIN waste_banks wb
+			ON wb.id = t.waste_bank_id
+		LEFT JOIN campaigns c
+			ON c.id = t.campaign_id
+		WHERE t.id = $1
+		`,
+		transactionID,
+	).Scan(
+		&result.ID,
+		&result.UserID,
+		&result.UserName,
+		&result.WasteBankID,
+		&result.WasteBank,
+		&result.CampaignID,
+		&result.Campaign,
+		&result.TotalWeight,
+		&result.TotalValue,
+		&result.Status,
+		&result.CreatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.Query(
+		ctx,
+		`
+		SELECT
+			ti.category_id,
+			wc.name,
+			COALESCE(ti.weight, 0)::float8,
+			COALESCE(ti.price_per_kg, 0)::float8,
+			COALESCE(ti.subtotal, 0)::float8
+		FROM transaction_items ti
+		JOIN waste_categories wc
+			ON wc.id = ti.category_id
+		WHERE ti.transaction_id = $1
+		ORDER BY ti.id
+		`,
+		transactionID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result.Items = make([]CreatedTransactionItem, 0)
+
+	for rows.Next() {
+		var item CreatedTransactionItem
+
+		if err := rows.Scan(
+			&item.WasteCategoryID,
+			&item.WasteCategoryName,
+			&item.Weight,
+			&item.UnitPrice,
+			&item.Subtotal,
+		); err != nil {
+			return nil, err
+		}
+
+		result.Items = append(result.Items, item)
+	}
+
+	return result, rows.Err()
 }
 
 func (r *TransactionRepository) Create(

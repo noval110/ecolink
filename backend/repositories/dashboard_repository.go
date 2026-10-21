@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"math"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -106,7 +107,8 @@ func (r *DashboardRepository) GetStats(
 	}
 
 	stats.EcoScore = int(stats.TotalRecycled * 10)
-	stats.CO2Avoided = stats.TotalRecycled * 0.6
+	stats.CO2Avoided =
+		math.Round(stats.TotalRecycled*0.6*100) / 100
 
 	return stats, nil
 }
