@@ -12,6 +12,7 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import ScrollToTop from './components/ScrollToTop';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import UserDashboard from './pages/app/UserDashboard';
 import EcoPassportPage from './pages/app/EcoPassportPage';
@@ -41,7 +42,14 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         
         {/* User Application Routes (Mahasiswa / Individu) */}
-        <Route path="/app" element={<DashboardLayout />}>
+        <Route
+          path="/app"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<UserDashboard />} />
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="passport" element={<EcoPassportPage />} />

@@ -25,21 +25,62 @@ import {
   Users
 } from 'lucide-react';
 import { getActiveUser } from '../data/mockUserData';
+import {
+  getStoredUser,
+  logoutUser,
+  getDashboard,
+} from '../services/api';
 
 export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(getActiveUser());
+  const storedUser = getStoredUser();
+  const mockUser = getActiveUser();
+
+  const [currentUser, setCurrentUser] = useState({
+    ...mockUser,
+    name:
+      storedUser?.full_name ||
+      mockUser.name,
+    email:
+      storedUser?.email ||
+      mockUser.email,
+    role:
+      storedUser?.role ||
+      mockUser.role,
+  });
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
 
   useEffect(() => {
-    const handleProfileChange = () => {
-      setCurrentUser(getActiveUser());
+    let active = true;
+
+    const loadDashboard = async () => {
+      try {
+        const result = await getDashboard();
+        const data = result.data;
+
+        if (!active) return;
+
+        setCurrentUser((current) => ({
+          ...current,
+          name: data.user.full_name,
+          role: data.user.role,
+          totalRecycledKg: data.stats.total_recycled,
+          co2SavedKg: Number(data.impact_summary.co2_avoided.toFixed(2)),
+          ecoScore: data.stats.eco_score,
+        }));
+      } catch (error) {
+        if (active) console.error('Failed to load dashboard layout:', error);
+      }
     };
-    window.addEventListener('ecolink_profile_changed', handleProfileChange);
-    return () => window.removeEventListener('ecolink_profile_changed', handleProfileChange);
+
+    loadDashboard();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const navItems = [
@@ -60,7 +101,10 @@ export default function DashboardLayout() {
   };
 
   const handleLogout = () => {
-    navigate('/');
+    logoutUser();
+    navigate('/login', {
+      replace: true,
+    });
   };
 
   const currentLevelProgress = Math.round((currentUser.currentXp / currentUser.nextLevelXp) * 100);
@@ -214,12 +258,12 @@ export default function DashboardLayout() {
           </div>
 
           <div className="topbar-right">
-            {/* Quick Points Pill */}
-            <Link to="/app/rewards" className="topbar-metric-pill" title="Tukar Poin EcoLink">
+            {/* Quick Eco Score Pill */}
+            <div className="topbar-metric-pill" title="Eco Score dari transaksi terverifikasi">
               <Award size={15} className="text-gold" />
-              <strong>{currentUser.points.toLocaleString()}</strong>
-              <span className="pill-sub">poin</span>
-            </Link>
+              <strong>{(currentUser.ecoScore ?? 0).toLocaleString()}</strong>
+              <span className="pill-sub">score</span>
+            </div>
 
             {/* Quick Kg Pill */}
             <div className="topbar-metric-pill d-none-mobile" title="Total Sampah Terverifikasi">

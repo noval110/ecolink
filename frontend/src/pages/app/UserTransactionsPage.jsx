@@ -1,308 +1,704 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+
 import {
   Search,
-  Filter,
   ReceiptText,
   ShieldCheck,
-  Calendar,
   MapPin,
-  TrendingUp,
-  Award,
-  ChevronRight,
   X,
   Clock,
   Target,
-  FileCheck2,
-  DollarSign,
-  Download,
-  Share2
+  ChevronRight,
 } from 'lucide-react';
-import { USER_TRANSACTIONS } from '../../data/mockUserData';
+
+import {
+  getMyTransactions,
+  getTransactionById,
+} from '../../services/api';
+
+function formatDate(value) {
+  if (!value) return '-';
+
+  return new Intl.DateTimeFormat('id-ID', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
+function formatRupiah(value) {
+  return Number(value || 0).toLocaleString('id-ID');
+}
 
 export default function UserTransactionsPage() {
+  const [transactions, setTransactions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Semua');
+  const [statusFilter, setStatusFilter] = useState('all');
+
   const [activeReceipt, setActiveReceipt] = useState(null);
 
-  const categories = ['Semua', 'Plastik', 'Kertas', 'Minyak', 'Logam'];
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const filteredTransactions = USER_TRANSACTIONS.filter((tx) => {
-    const matchesSearch =
-      tx.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.bankName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.campaignName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.items.some(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  useEffect(() => {
+    let active = true;
 
-    const matchesCategory =
-      selectedCategory === 'Semua' ||
-      tx.items.some(i => i.category.toLowerCase() === selectedCategory.toLowerCase());
+    const loadTransactions = async () => {
+      try {
+        const result = await getMyTransactions();
 
-    return matchesSearch && matchesCategory;
-  });
+        if (!active) return;
 
-  const totalKgAccumulated = USER_TRANSACTIONS.reduce((acc, curr) => acc + curr.totalKg, 0);
-  const totalRupiahAccumulated = USER_TRANSACTIONS.reduce((acc, curr) => acc + curr.rupiahAmount, 0);
-  const totalPointsAccumulated = USER_TRANSACTIONS.reduce((acc, curr) => acc + curr.pointsEarned, 0);
+        setTransactions(
+          Array.isArray(result.data)
+            ? result.data
+            : []
+        );
+      } catch (err) {
+        if (active) {
+          setError(
+            err.message ||
+              'Gagal memuat riwayat transaksi.'
+          );
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadTransactions();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      const keyword =
+        searchQuery.toLowerCase();
+
+      const matchesSearch =
+        String(tx.id)
+          .toLowerCase()
+          .includes(keyword) ||
+        tx.waste_bank
+          ?.toLowerCase()
+          .includes(keyword) ||
+        tx.campaign
+          ?.toLowerCase()
+          .includes(keyword);
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        tx.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [
+    transactions,
+    searchQuery,
+    statusFilter,
+  ]);
+
+  const verifiedTransactions =
+    transactions.filter(
+      (tx) => tx.status === 'verified'
+    );
+
+  const totalKg = verifiedTransactions.reduce(
+    (total, tx) =>
+      total + Number(tx.total_weight || 0),
+    0
+  );
+
+  const totalValue =
+    verifiedTransactions.reduce(
+      (total, tx) =>
+        total + Number(tx.total_value || 0),
+      0
+    );
+
+  const totalEcoScore =
+    Math.round(totalKg * 10);
+
+  const openTransaction = async (id) => {
+    setDetailLoading(true);
+    setError('');
+
+    try {
+      const result =
+        await getTransactionById(id);
+
+      setActiveReceipt(result.data);
+    } catch (err) {
+      setError(
+        err.message ||
+          'Gagal memuat detail transaksi.'
+      );
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   return (
     <div className="user-transactions-page">
-      {/* Header */}
+
       <div className="page-header-row">
         <div>
           <div className="inline-badge-tiny">
-            <ShieldCheck size={14} className="text-emerald" />
-            <span>Jejak Audit Terverifikasi</span>
+            <ShieldCheck
+              size={14}
+              className="text-emerald"
+            />
+
+            <span>
+              Jejak Audit Terverifikasi
+            </span>
           </div>
-          <h1 className="page-title">Riwayat Transaksi Penyetoran</h1>
+
+          <h1 className="page-title">
+            Riwayat Transaksi Penyetoran
+          </h1>
+
           <p className="page-sub">
-            Seluruh catatan transaksi penyetoran sampah fisik yang telah divalidasi dan ditimbang oleh petugas resmi Bank Sampah.
+            Riwayat penyetoran sampah yang
+            tercatat pada akun EcoLink kamu.
           </p>
         </div>
       </div>
 
-      {/* Summary Stat Cards */}
       <div className="transactions-summary-strip">
+
         <div className="tx-summary-card">
-          <span className="lbl">Total Transaksi Sah</span>
-          <strong className="val">{USER_TRANSACTIONS.length} Transaksi</strong>
-          <span className="sub text-emerald">100% Terverifikasi Timbangan</span>
+          <span className="lbl">
+            Transaksi Terverifikasi
+          </span>
+
+          <strong className="val">
+            {verifiedTransactions.length}{' '}
+            Transaksi
+          </strong>
+
+          <span className="sub text-emerald">
+            Validasi Bank Sampah
+          </span>
         </div>
+
         <div className="tx-summary-card">
-          <span className="lbl">Akumulasi Bobot Sampah</span>
-          <strong className="val text-emerald">{totalKgAccumulated.toFixed(1)} kg</strong>
-          <span className="sub">Tercatat di Eco Passport</span>
+          <span className="lbl">
+            Total Sampah Terverifikasi
+          </span>
+
+          <strong className="val text-emerald">
+            {totalKg.toFixed(1)} kg
+          </strong>
+
+          <span className="sub">
+            Berdasarkan transaksi verified
+          </span>
         </div>
+
         <div className="tx-summary-card">
-          <span className="lbl">Total Pendapatan Rupiah</span>
-          <strong className="val text-gold">Rp {totalRupiahAccumulated.toLocaleString('id-ID')}</strong>
-          <span className="sub">Telah diterima tunai / transfer</span>
+          <span className="lbl">
+            Total Nilai Transaksi
+          </span>
+
+          <strong className="val text-gold">
+            Rp {formatRupiah(totalValue)}
+          </strong>
+
+          <span className="sub">
+            Nilai material yang tercatat
+          </span>
         </div>
+
         <div className="tx-summary-card">
-          <span className="lbl">Bonus Poin Diperoleh</span>
-          <strong className="val">+{totalPointsAccumulated.toLocaleString()} poin</strong>
-          <span className="sub">Meningkatkan level paspor</span>
+          <span className="lbl">
+            Eco Score
+          </span>
+
+          <strong className="val">
+            {totalEcoScore}
+          </strong>
+
+          <span className="sub">
+            Berdasarkan sampah terverifikasi
+          </span>
         </div>
+
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="discovery-filter-box" style={{ marginBottom: '2rem' }}>
+      <div
+        className="discovery-filter-box"
+        style={{
+          marginBottom: '2rem',
+        }}
+      >
         <div className="discovery-search-row">
+
           <div className="search-input-wrapper">
-            <Search size={18} className="search-icon" />
+
+            <Search
+              size={18}
+              className="search-icon"
+            />
+
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari ID transaksi, nama bank sampah, atau jenis material..."
+              onChange={(e) =>
+                setSearchQuery(
+                  e.target.value
+                )
+              }
+              placeholder="Cari ID, bank sampah, atau kampanye..."
               className="discovery-search-input"
             />
+
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
+                onClick={() =>
+                  setSearchQuery('')
+                }
                 className="clear-search-btn"
                 aria-label="Hapus pencarian"
               >
                 <X size={14} />
               </button>
             )}
+
           </div>
         </div>
 
-        {/* Category Pills */}
         <div className="material-filter-scroll">
-          <span className="material-filter-label">Filter Material:</span>
+          <span className="material-filter-label">
+            Status:
+          </span>
+
           <div className="material-filter-chips">
-            {categories.map((cat) => (
+
+            {[
+              ['all', 'Semua'],
+              ['verified', 'Terverifikasi'],
+              ['pending', 'Menunggu Verifikasi'],
+            ].map(([value, label]) => (
               <button
-                key={cat}
+                key={value}
                 type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`filter-chip ${selectedCategory === cat ? 'active' : ''}`}
+                onClick={() =>
+                  setStatusFilter(value)
+                }
+                className={`filter-chip ${
+                  statusFilter === value
+                    ? 'active'
+                    : ''
+                }`}
               >
-                {cat}
+                {label}
               </button>
             ))}
+
           </div>
         </div>
       </div>
 
-      {/* Transaction List Cards */}
-      {filteredTransactions.length === 0 ? (
-        <div className="discovery-empty-state">
-          <div className="empty-icon-box">
-            <ReceiptText size={32} color="rgba(255,255,255,0.4)" />
-          </div>
-          <h4>Tidak Ada Transaksi yang Ditemukan</h4>
-          <p>Coba gunakan kata kunci pencarian lain atau ubah filter kategori material.</p>
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedCategory('Semua');
-            }}
-            className="btn btn-outline btn-sm"
-          >
-            Reset Filter
-          </button>
-        </div>
-      ) : (
-        <div className="transactions-stack">
-          {filteredTransactions.map((tx) => (
-            <div key={tx.id} className="tx-full-card" onClick={() => setActiveReceipt(tx)}>
-              <div className="tx-full-header">
-                <div className="tx-id-badge-col">
-                  <div className="tx-id-row">
-                    <ReceiptText size={18} className="text-emerald" />
-                    <strong className="tx-code">{tx.id}</strong>
-                    <span className="tx-pill-sah">
-                      <ShieldCheck size={13} /> {tx.status}
-                    </span>
-                  </div>
-                  <span className="tx-time-text">
-                    <Clock size={13} /> {tx.date}
-                  </span>
-                </div>
-
-                <div className="tx-total-amounts">
-                  <span className="tx-kg-pill">+{tx.totalKg} kg</span>
-                  <span className="tx-rp-pill">Rp {tx.rupiahAmount.toLocaleString('id-ID')}</span>
-                  <span className="tx-pts-pill">+{tx.pointsEarned} poin</span>
-                </div>
-              </div>
-
-              <div className="tx-full-body">
-                <div className="tx-bank-row">
-                  <MapPin size={15} className="text-emerald shrink-0" />
-                  <strong>{tx.bankName}</strong>
-                  <span className="tx-bank-addr">({tx.bankAddress})</span>
-                </div>
-
-                {tx.campaignName && (
-                  <div className="tx-campaign-link-row">
-                    <Target size={14} className="text-blue shrink-0" />
-                    <span>Terhubung ke Kampanye: <strong>{tx.campaignName}</strong></span>
-                  </div>
-                )}
-
-                <div className="tx-items-preview-tags">
-                  {tx.items.map((item, idx) => (
-                    <span key={idx} className="tx-item-tag">
-                      {item.name} • <strong>{item.weightKg} kg</strong> (Rp {item.subtotal.toLocaleString('id-ID')})
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="tx-full-footer">
-                <span className="tx-teller-info">Petugas: <strong>{tx.tellerName}</strong></span>
-                <button type="button" className="btn btn-outline btn-xs btn-open-receipt">
-                  <span>Buka Struk Digital Resmi</span>
-                  <ChevronRight size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
+      {error && (
+        <div
+          style={{
+            marginBottom: '1rem',
+            color: '#ef4444',
+          }}
+        >
+          {error}
         </div>
       )}
 
-      {/* Official Digital Receipt Modal */}
-      {activeReceipt && (
-        <div className="modal-backdrop" onClick={() => setActiveReceipt(null)}>
-          <div className="tx-receipt-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="receipt-modal-header">
-              <div>
-                <span className="receipt-tag">E-RECEIPT RESMI BANK SAMPAH</span>
-                <h3 className="receipt-id">{activeReceipt.id}</h3>
+      {loading ? (
+        <div className="discovery-empty-state">
+          <h4>
+            Memuat transaksi...
+          </h4>
+        </div>
+      ) : filteredTransactions.length === 0 ? (
+        <div className="discovery-empty-state">
+
+          <div className="empty-icon-box">
+            <ReceiptText
+              size={32}
+              color="rgba(255,255,255,0.4)"
+            />
+          </div>
+
+          <h4>
+            Tidak Ada Transaksi
+          </h4>
+
+          <p>
+            Belum ada transaksi yang sesuai
+            dengan pencarian atau filter.
+          </p>
+
+        </div>
+      ) : (
+        <div className="transactions-stack">
+
+          {filteredTransactions.map(
+            (tx) => (
+              <div
+                key={tx.id}
+                className="tx-full-card"
+                onClick={() =>
+                  openTransaction(tx.id)
+                }
+              >
+
+                <div className="tx-full-header">
+
+                  <div className="tx-id-badge-col">
+
+                    <div className="tx-id-row">
+
+                      <ReceiptText
+                        size={18}
+                        className="text-emerald"
+                      />
+
+                      <strong className="tx-code">
+                        TRX-{tx.id}
+                      </strong>
+
+                      <span className="tx-pill-sah">
+                        <ShieldCheck size={13} />
+                        {tx.status === 'verified'
+                          ? 'Terverifikasi'
+                          : 'Menunggu Verifikasi'}
+                      </span>
+
+                    </div>
+
+                    <span className="tx-time-text">
+                      <Clock size={13} />
+                      {formatDate(
+                        tx.created_at
+                      )}
+                    </span>
+
+                  </div>
+
+                  <div className="tx-total-amounts">
+
+                    <span className="tx-kg-pill">
+                      {tx.total_weight} kg
+                    </span>
+
+                    <span className="tx-rp-pill">
+                      Rp{' '}
+                      {formatRupiah(
+                        tx.total_value
+                      )}
+                    </span>
+
+                  </div>
+                </div>
+
+                <div className="tx-full-body">
+
+                  <div className="tx-bank-row">
+
+                    <MapPin
+                      size={15}
+                      className="text-emerald shrink-0"
+                    />
+
+                    <strong>
+                      {tx.waste_bank}
+                    </strong>
+
+                  </div>
+
+                  {tx.campaign && (
+                    <div className="tx-campaign-link-row">
+
+                      <Target
+                        size={14}
+                        className="text-blue shrink-0"
+                      />
+
+                      <span>
+                        Kampanye:{' '}
+                        <strong>
+                          {tx.campaign}
+                        </strong>
+                      </span>
+
+                    </div>
+                  )}
+
+                </div>
+
+                <div className="tx-full-footer">
+
+                  <span className="tx-teller-info">
+                    Status:{' '}
+                    <strong>
+                      {tx.status}
+                    </strong>
+                  </span>
+
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-xs btn-open-receipt"
+                  >
+                    <span>
+                      Lihat Detail
+                    </span>
+
+                    <ChevronRight
+                      size={14}
+                    />
+                  </button>
+
+                </div>
               </div>
+            )
+          )}
+
+        </div>
+      )}
+
+      {detailLoading && (
+        <div
+          style={{
+            marginTop: '1rem',
+            opacity: 0.7,
+          }}
+        >
+          Memuat detail transaksi...
+        </div>
+      )}
+
+      {activeReceipt && (
+        <div
+          className="modal-backdrop"
+          onClick={() =>
+            setActiveReceipt(null)
+          }
+        >
+          <div
+            className="tx-receipt-modal"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+
+            <div className="receipt-modal-header">
+
+              <div>
+                <span className="receipt-tag">
+                  DETAIL TRANSAKSI ECOLINK
+                </span>
+
+                <h3 className="receipt-id">
+                  TRX-{activeReceipt.transaction_id}
+                </h3>
+              </div>
+
               <button
                 type="button"
                 className="modal-close-btn"
-                onClick={() => setActiveReceipt(null)}
-                aria-label="Tutup Struk"
+                aria-label="Tutup detail transaksi"
+                onClick={() =>
+                  setActiveReceipt(null)
+                }
               >
                 <X size={18} />
               </button>
+
             </div>
 
             <div className="receipt-modal-body">
+
               <div className="receipt-verified-banner">
-                <ShieldCheck size={20} className="text-emerald shrink-0" />
+
+                <ShieldCheck
+                  size={20}
+                  className="text-emerald"
+                />
+
                 <div>
-                  <strong>Transaksi Terverifikasi Timbangan Fisik</strong>
-                  <p>Kode Keabsahan Audit: {activeReceipt.verificationCode}</p>
+                  <strong>
+                    {activeReceipt.status ===
+                    'verified'
+                      ? 'Transaksi Terverifikasi'
+                      : 'Menunggu Verifikasi'}
+                  </strong>
+
+                  <p>
+                    Status transaksi:{' '}
+                    {activeReceipt.status}
+                  </p>
                 </div>
+
               </div>
 
               <div className="receipt-info-grid">
+
                 <div>
-                  <span className="lbl">Nama Bank Sampah:</span>
-                  <strong>{activeReceipt.bankName}</strong>
-                  <p className="sub">{activeReceipt.bankAddress}</p>
+                  <span className="lbl">
+                    Bank Sampah:
+                  </span>
+
+                  <strong>
+                    {activeReceipt.waste_bank}
+                  </strong>
                 </div>
+
                 <div>
-                  <span className="lbl">Petugas Penimbang:</span>
-                  <strong>{activeReceipt.tellerName}</strong>
-                  <p className="sub">{activeReceipt.date}</p>
+                  <span className="lbl">
+                    Waktu Transaksi:
+                  </span>
+
+                  <strong>
+                    {formatDate(
+                      activeReceipt.created_at
+                    )}
+                  </strong>
                 </div>
+
               </div>
 
-              {activeReceipt.campaignName && (
+              {activeReceipt.campaign && (
                 <div className="receipt-campaign-ref">
-                  <Target size={15} className="text-emerald shrink-0" />
-                  <span>Kontribusi untuk: <strong>{activeReceipt.campaignName}</strong></span>
+
+                  <Target
+                    size={15}
+                    className="text-emerald"
+                  />
+
+                  <span>
+                    Kontribusi untuk:{' '}
+                    <strong>
+                      {activeReceipt.campaign}
+                    </strong>
+                  </span>
+
                 </div>
               )}
 
               <div className="receipt-items-table">
+
                 <div className="receipt-table-header">
-                  <span>Nama Material</span>
+                  <span>Material</span>
                   <span>Bobot</span>
-                  <span className="text-right">Harga/kg</span>
-                  <span className="text-right">Subtotal</span>
+                  <span className="text-right">
+                    Harga/kg
+                  </span>
+                  <span className="text-right">
+                    Subtotal
+                  </span>
                 </div>
-                {activeReceipt.items.map((item, idx) => (
-                  <div key={idx} className="receipt-table-row">
-                    <div>
-                      <strong>{item.name}</strong>
-                      <span className="item-cat-pill">{item.category}</span>
+
+                {activeReceipt.items.map(
+                  (item) => (
+                    <div
+                      key={
+                        item.waste_category_id
+                      }
+                      className="receipt-table-row"
+                    >
+
+                      <div>
+                        <strong>
+                          {
+                            item.waste_category_name
+                          }
+                        </strong>
+                      </div>
+
+                      <span>
+                        {item.weight} kg
+                      </span>
+
+                      <span className="text-right">
+                        Rp{' '}
+                        {formatRupiah(
+                          item.unit_price
+                        )}
+                      </span>
+
+                      <span className="text-right font-semibold">
+                        Rp{' '}
+                        {formatRupiah(
+                          item.subtotal
+                        )}
+                      </span>
+
                     </div>
-                    <span>{item.weightKg} kg</span>
-                    <span className="text-right">Rp {item.pricePerKg.toLocaleString('id-ID')}</span>
-                    <span className="text-right font-semibold">Rp {item.subtotal.toLocaleString('id-ID')}</span>
-                  </div>
-                ))}
+                  )
+                )}
+
               </div>
 
               <div className="receipt-total-box">
+
                 <div className="total-row">
-                  <span>Total Sampah Disetor:</span>
-                  <strong>{activeReceipt.totalKg} kg</strong>
+                  <span>
+                    Total Berat:
+                  </span>
+
+                  <strong>
+                    {activeReceipt.total_weight}{' '}
+                    kg
+                  </strong>
                 </div>
+
                 <div className="total-row">
-                  <span>Poin Paspor Ditambahkan:</span>
-                  <strong className="text-gold">+{activeReceipt.pointsEarned} poin</strong>
+                  <span>
+                    Eco Score:
+                  </span>
+
+                  <strong>
+                    +
+                    {Math.round(
+                      activeReceipt.total_weight *
+                        10
+                    )}
+                  </strong>
                 </div>
+
                 <div className="total-row grand-total">
-                  <span>Total Rupiah Diterima:</span>
-                  <strong className="text-emerald">Rp {activeReceipt.rupiahAmount.toLocaleString('id-ID')}</strong>
+                  <span>
+                    Total Nilai:
+                  </span>
+
+                  <strong className="text-emerald">
+                    Rp{' '}
+                    {formatRupiah(
+                      activeReceipt.total_value
+                    )}
+                  </strong>
                 </div>
+
               </div>
 
-              {activeReceipt.notes && (
-                <p className="receipt-notes">Catatan Pemeriksaan: "{activeReceipt.notes}"</p>
-              )}
             </div>
 
             <div className="receipt-modal-footer">
+
               <button
                 type="button"
                 className="btn btn-outline w-100 justify-center"
-                onClick={() => setActiveReceipt(null)}
+                onClick={() =>
+                  setActiveReceipt(null)
+                }
               >
-                Tutup Nota
+                Tutup Detail
               </button>
+
             </div>
+
           </div>
         </div>
       )}
