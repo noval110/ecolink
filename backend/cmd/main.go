@@ -52,6 +52,11 @@ func main() {
 		campaignRepository,
 	)
 
+	transactionRepository := repositories.NewTransactionRepository(db)
+	transactionHandler := handlers.NewTransactionDBHandler(
+		transactionRepository,
+	)
+
 	e := echo.New()
 
 	e.Logger.Info("PostgreSQL connected successfully")
@@ -84,6 +89,7 @@ func main() {
 		wasteCategoryHandler,
 		wasteBankHandler,
 		campaignHandler,
+		transactionHandler,
 		cfg.JWTSecret,
 	)
 
