@@ -15,6 +15,7 @@ func RegisterRoutes(e *echo.Echo) {
 		nil,
 		nil,
 		nil,
+		nil,
 		"",
 	)
 }
@@ -26,6 +27,7 @@ func RegisterRoutesWithAuth(
 	dashboardHandler *handlers.DashboardHandler,
 	wasteCategoryHandler *handlers.WasteCategoryHandler,
 	wasteBankHandler *handlers.WasteBankDBHandler,
+	campaignHandler *handlers.CampaignDBHandler,
 	jwtSecret string,
 ) {
 	registerRoutes(
@@ -35,6 +37,7 @@ func RegisterRoutesWithAuth(
 		dashboardHandler,
 		wasteCategoryHandler,
 		wasteBankHandler,
+		campaignHandler,
 		jwtSecret,
 	)
 }
@@ -46,6 +49,7 @@ func registerRoutes(
 	dashboardHandler *handlers.DashboardHandler,
 	wasteCategoryHandler *handlers.WasteCategoryHandler,
 	wasteBankHandler *handlers.WasteBankDBHandler,
+	campaignHandler *handlers.CampaignDBHandler,
 	jwtSecret string,
 ) {
 	api := e.Group("/api")
@@ -97,8 +101,13 @@ func registerRoutes(
 		)
 	}
 
-	api.GET("/campaigns", handlers.GetCampaigns)
-	api.GET("/campaigns/:id", handlers.GetCampaignByID)
+	if campaignHandler != nil {
+		api.GET("/campaigns", campaignHandler.List)
+		api.GET("/campaigns/:id", campaignHandler.Detail)
+	} else {
+		api.GET("/campaigns", handlers.GetCampaigns)
+		api.GET("/campaigns/:id", handlers.GetCampaignByID)
+	}
 	api.POST("/campaigns/:id/join", handlers.JoinCampaign)
 
 	api.POST("/transactions", handlers.CreateTransaction)
