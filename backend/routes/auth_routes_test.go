@@ -30,7 +30,7 @@ func TestMeRoutesRequireJWT(t *testing.T) {
 	}
 
 	e := echo.New()
-	routes.RegisterRoutesWithAuth(e, handlers.NewAuthHandler(nil), nil, secret)
+	routes.RegisterRoutesWithAuth(e, handlers.NewAuthHandler(nil), nil, nil, secret)
 
 	tests := []struct {
 		name   string
@@ -60,7 +60,7 @@ func TestMeRoutesRequireJWT(t *testing.T) {
 
 func TestAuthRoutesRemainPublicWithJWT(t *testing.T) {
 	e := echo.New()
-	routes.RegisterRoutesWithAuth(e, handlers.NewAuthHandler(nil), nil, "test-secret")
+	routes.RegisterRoutesWithAuth(e, handlers.NewAuthHandler(nil), nil, nil, "test-secret")
 
 	for _, path := range []string{"/api/auth/register", "/api/auth/login"} {
 		t.Run(path, func(t *testing.T) {

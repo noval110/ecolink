@@ -31,6 +31,10 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 
 	userRepository := repositories.NewUserRepository(db)
+	dashboardRepository := repositories.NewDashboardRepository(db)
+	dashboardHandler := handlers.NewDashboardHandler(
+		dashboardRepository,
+	)
 	profileHandler := handlers.NewProfileHandler(userRepository)
 
 	e := echo.New()
@@ -61,6 +65,7 @@ func main() {
 		e,
 		authHandler,
 		profileHandler,
+		dashboardHandler,
 		cfg.JWTSecret,
 	)
 

@@ -12,6 +12,7 @@ func RegisterRoutes(e *echo.Echo) {
 		e,
 		handlers.NewAuthHandler(nil),
 		nil,
+		nil,
 		"",
 	)
 }
@@ -20,12 +21,14 @@ func RegisterRoutesWithAuth(
 	e *echo.Echo,
 	authHandler *handlers.AuthHandler,
 	profileHandler *handlers.ProfileHandler,
+	dashboardHandler *handlers.DashboardHandler,
 	jwtSecret string,
 ) {
 	registerRoutes(
 		e,
 		authHandler,
 		profileHandler,
+		dashboardHandler,
 		jwtSecret,
 	)
 }
@@ -34,6 +37,7 @@ func registerRoutes(
 	e *echo.Echo,
 	authHandler *handlers.AuthHandler,
 	profileHandler *handlers.ProfileHandler,
+	dashboardHandler *handlers.DashboardHandler,
 	jwtSecret string,
 ) {
 	api := e.Group("/api")
@@ -54,7 +58,11 @@ func registerRoutes(
 		me.GET("/profile", profileHandler.GetProfile)
 	}
 
-	me.GET("/dashboard", handlers.GetDashboard)
+	if dashboardHandler != nil {
+		me.GET("/dashboard", dashboardHandler.GetDashboard)
+	} else {
+		me.GET("/dashboard", handlers.GetDashboard)
+	}
 	me.GET("/passport", handlers.GetPassport)
 	me.GET("/impact", handlers.GetMyImpact)
 	me.GET("/transactions", handlers.GetMyTransactions)
