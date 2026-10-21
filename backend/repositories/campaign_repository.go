@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -265,4 +266,46 @@ func calculateCampaignProgress(
 	}
 
 	return current / target * 100
+}
+
+func (r *CampaignRepository) Join(
+	ctx context.Context,
+	campaignID int64,
+	userID int64,
+) (time.Time, bool, error) {
+	var joinedAt time.Time
+
+	err := r.db.QueryRow(
+		ctx,
+		`
+		INSERT INTO campaigners (
+			campaign_id,
+			user_id,
+			status
+		)
+		SELECT
+			$1,
+			$2,
+			'joined'
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM campaigners
+			WHERE campaign_id = $1
+			  AND user_id = $2
+		)
+		RETURNING joined_at
+		`,
+		campaignID,
+		userID,
+	).Scan(&joinedAt)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return time.Time{}, false, nil
+	}
+
+	if err != nil {
+		return time.Time{}, false, err
+	}
+
+	return joinedAt, true, nil
 }

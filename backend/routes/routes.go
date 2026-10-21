@@ -102,13 +102,39 @@ func registerRoutes(
 	}
 
 	if campaignHandler != nil {
-		api.GET("/campaigns", campaignHandler.List)
-		api.GET("/campaigns/:id", campaignHandler.Detail)
+		api.GET(
+			"/campaigns",
+			campaignHandler.List,
+		)
+
+		api.GET(
+			"/campaigns/:id",
+			campaignHandler.Detail,
+		)
+
+		if jwtSecret != "" {
+			api.POST(
+				"/campaigns/:id/join",
+				campaignHandler.Join,
+				middleware.RequireAuth(jwtSecret),
+			)
+		}
 	} else {
-		api.GET("/campaigns", handlers.GetCampaigns)
-		api.GET("/campaigns/:id", handlers.GetCampaignByID)
+		api.GET(
+			"/campaigns",
+			handlers.GetCampaigns,
+		)
+
+		api.GET(
+			"/campaigns/:id",
+			handlers.GetCampaignByID,
+		)
+
+		api.POST(
+			"/campaigns/:id/join",
+			handlers.JoinCampaign,
+		)
 	}
-	api.POST("/campaigns/:id/join", handlers.JoinCampaign)
 
 	api.POST("/transactions", handlers.CreateTransaction)
 	api.GET("/transactions/:id", handlers.GetTransactionByID)
