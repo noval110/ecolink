@@ -146,14 +146,24 @@ func registerRoutes(
 			transactionHandler.Create,
 			middleware.RequireAuth(jwtSecret),
 		)
+
+		api.PUT(
+			"/transactions/:id/verify",
+			transactionHandler.Verify,
+			middleware.RequireAuth(jwtSecret),
+		)
 	} else {
 		api.POST(
 			"/transactions",
 			handlers.CreateTransaction,
 		)
+
+		api.PUT(
+			"/transactions/:id/verify",
+			handlers.VerifyTransaction,
+		)
 	}
 	api.GET("/transactions/:id", handlers.GetTransactionByID)
-	api.PUT("/transactions/:id/verify", handlers.VerifyTransaction)
 
 	api.GET("/organizations/:id/dashboard", handlers.GetOrganizationDashboard)
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 
@@ -183,6 +184,102 @@ func (h *TransactionDBHandler) Create(
 		c,
 		http.StatusCreated,
 		"Transaction created",
+		transaction,
+	)
+}
+
+func (h *TransactionDBHandler) Verify(
+	c echo.Context,
+) error {
+	verifierUserID, ok := c.Get("user_id").(int64)
+	if !ok {
+		return utils.ErrorResponse(
+			c,
+			http.StatusUnauthorized,
+			"Invalid authenticated user",
+		)
+	}
+
+	role, ok := c.Get("role").(string)
+	if !ok || role != "waste_bank" {
+		return utils.ErrorResponse(
+			c,
+			http.StatusForbidden,
+			"Only waste bank users can verify transactions",
+		)
+	}
+
+	transactionID, err := strconv.ParseInt(
+		c.Param("id"),
+		10,
+		64,
+	)
+	if err != nil {
+		return utils.ErrorResponse(
+			c,
+			http.StatusBadRequest,
+			"Invalid transaction ID",
+		)
+	}
+
+	transaction, err := h.repository.Verify(
+		c.Request().Context(),
+		transactionID,
+		verifierUserID,
+	)
+
+	switch {
+	case errors.Is(
+		err,
+		repositories.ErrTransactionNotFound,
+	):
+		return utils.NotFoundResponse(
+			c,
+			"Transaction not found",
+		)
+
+	case errors.Is(
+		err,
+		repositories.ErrTransactionAlreadyVerified,
+	):
+		return utils.ErrorResponse(
+			c,
+			http.StatusBadRequest,
+			"Transaction already verified",
+		)
+
+	case errors.Is(
+		err,
+		repositories.ErrTransactionCannotVerify,
+	):
+		return utils.ErrorResponse(
+			c,
+			http.StatusBadRequest,
+			"Transaction cannot be verified",
+		)
+
+	case errors.Is(
+		err,
+		repositories.ErrTransactionVerifierNotAuthorized,
+	):
+		return utils.ErrorResponse(
+			c,
+			http.StatusForbidden,
+			"You are not authorized to verify transactions for this waste bank",
+		)
+
+	case err != nil:
+		return utils.ErrorResponse(
+			c,
+			http.StatusInternalServerError,
+			"Failed to verify transaction",
+		)
+	}
+
+	return utils.SuccessResponse(
+		c,
+		http.StatusOK,
+		"Transaction verified",
 		transaction,
 	)
 }

@@ -11,10 +11,14 @@ import (
 )
 
 var (
-	ErrTransactionWasteBankNotFound = errors.New("waste bank not found")
-	ErrTransactionCampaignNotFound  = errors.New("campaign not found")
-	ErrTransactionNotJoinedCampaign = errors.New("user has not joined campaign")
-	ErrTransactionCategoryNotAccepted = errors.New("waste category is not accepted")
+	ErrTransactionWasteBankNotFound     = errors.New("waste bank not found")
+	ErrTransactionCampaignNotFound      = errors.New("campaign not found")
+	ErrTransactionNotJoinedCampaign     = errors.New("user has not joined campaign")
+	ErrTransactionCategoryNotAccepted   = errors.New("waste category is not accepted")
+	ErrTransactionNotFound              = errors.New("transaction not found")
+	ErrTransactionAlreadyVerified       = errors.New("transaction already verified")
+	ErrTransactionCannotVerify          = errors.New("transaction cannot be verified")
+	ErrTransactionVerifierNotAuthorized = errors.New("verifier is not authorized for this waste bank")
 )
 
 type CreateTransactionItemInput struct {
@@ -44,6 +48,16 @@ type CreatedTransaction struct {
 
 type TransactionRepository struct {
 	db *pgxpool.Pool
+}
+
+type VerifiedTransaction struct {
+	ID                    int64   `json:"transaction_id"`
+	Status                string  `json:"status"`
+	TotalWeight           float64 `json:"total_weight"`
+	TotalValue            float64 `json:"total_value"`
+	ImpactAdded           float64 `json:"impact_added"`
+	EcoScoreAdded         int     `json:"eco_score_added"`
+	CampaignProgressAdded float64 `json:"campaign_progress_added"`
 }
 
 func NewTransactionRepository(
@@ -287,4 +301,167 @@ func (r *TransactionRepository) Create(
 	}
 
 	return result, nil
+}
+
+func (r *TransactionRepository) Verify(
+	ctx context.Context,
+	transactionID int64,
+	verifierUserID int64,
+) (*VerifiedTransaction, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	var (
+		userID      int64
+		wasteBankID int64
+		campaignID  *int64
+		totalWeight float64
+		totalValue  float64
+		status      string
+	)
+
+	err = tx.QueryRow(
+		ctx,
+		`
+		SELECT
+			user_id,
+			waste_bank_id,
+			campaign_id,
+			COALESCE(total_weight, 0)::float8,
+			COALESCE(total_value, 0)::float8,
+			status
+		FROM transactions
+		WHERE id = $1
+		FOR UPDATE
+		`,
+		transactionID,
+	).Scan(
+		&userID,
+		&wasteBankID,
+		&campaignID,
+		&totalWeight,
+		&totalValue,
+		&status,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrTransactionNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if status == "verified" {
+		return nil, ErrTransactionAlreadyVerified
+	}
+
+	if status != "pending" {
+		return nil, ErrTransactionCannotVerify
+	}
+
+	var authorized bool
+
+	err = tx.QueryRow(
+		ctx,
+		`
+		SELECT EXISTS (
+			SELECT 1
+			FROM waste_bank_members
+			WHERE waste_bank_id = $1
+			  AND user_id = $2
+		)
+		`,
+		wasteBankID,
+		verifierUserID,
+	).Scan(&authorized)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !authorized {
+		return nil, ErrTransactionVerifierNotAuthorized
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		`
+		UPDATE transactions
+		SET status = 'verified'
+		WHERE id = $1
+		`,
+		transactionID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	impactAdded := totalWeight
+	ecoScoreAdded := int(math.Round(totalWeight * 10))
+	campaignProgressAdded := 0.0
+
+	if campaignID != nil {
+		var organizationID int64
+
+		err = tx.QueryRow(
+			ctx,
+			`
+			SELECT organization_id
+			FROM campaigns
+			WHERE id = $1
+			`,
+			*campaignID,
+		).Scan(&organizationID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		co2Reduced :=
+			math.Round(totalWeight*0.6*100) / 100
+
+		_, err = tx.Exec(
+			ctx,
+			`
+			INSERT INTO impact_records (
+				user_id,
+				campaign_id,
+				organization_id,
+				weight,
+				co2_reduced
+			)
+			VALUES ($1, $2, $3, $4, $5)
+			`,
+			userID,
+			*campaignID,
+			organizationID,
+			totalWeight,
+			co2Reduced,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		campaignProgressAdded = totalWeight
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return &VerifiedTransaction{
+		ID:                    transactionID,
+		Status:                "verified",
+		TotalWeight:           totalWeight,
+		TotalValue:            totalValue,
+		ImpactAdded:           impactAdded,
+		EcoScoreAdded:         ecoScoreAdded,
+		CampaignProgressAdded: campaignProgressAdded,
+	}, nil
 }
