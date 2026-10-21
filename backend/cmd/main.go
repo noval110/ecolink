@@ -37,6 +37,11 @@ func main() {
 	)
 	profileHandler := handlers.NewProfileHandler(userRepository)
 
+	wasteCategoryRepository := repositories.NewWasteCategoryRepository(db)
+	wasteCategoryHandler := handlers.NewWasteCategoryHandler(
+		wasteCategoryRepository,
+	)
+
 	e := echo.New()
 
 	e.Logger.Info("PostgreSQL connected successfully")
@@ -66,6 +71,7 @@ func main() {
 		authHandler,
 		profileHandler,
 		dashboardHandler,
+		wasteCategoryHandler,
 		cfg.JWTSecret,
 	)
 

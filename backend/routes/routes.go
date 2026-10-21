@@ -13,6 +13,7 @@ func RegisterRoutes(e *echo.Echo) {
 		handlers.NewAuthHandler(nil),
 		nil,
 		nil,
+		nil,
 		"",
 	)
 }
@@ -22,6 +23,7 @@ func RegisterRoutesWithAuth(
 	authHandler *handlers.AuthHandler,
 	profileHandler *handlers.ProfileHandler,
 	dashboardHandler *handlers.DashboardHandler,
+	wasteCategoryHandler *handlers.WasteCategoryHandler,
 	jwtSecret string,
 ) {
 	registerRoutes(
@@ -29,6 +31,7 @@ func RegisterRoutesWithAuth(
 		authHandler,
 		profileHandler,
 		dashboardHandler,
+		wasteCategoryHandler,
 		jwtSecret,
 	)
 }
@@ -38,6 +41,7 @@ func registerRoutes(
 	authHandler *handlers.AuthHandler,
 	profileHandler *handlers.ProfileHandler,
 	dashboardHandler *handlers.DashboardHandler,
+	wasteCategoryHandler *handlers.WasteCategoryHandler,
 	jwtSecret string,
 ) {
 	api := e.Group("/api")
@@ -70,7 +74,17 @@ func registerRoutes(
 	api.GET("/waste-banks", handlers.GetWasteBanks)
 	api.GET("/waste-banks/:id/prices", handlers.GetWasteBankPrices)
 	api.GET("/waste-banks/:id", handlers.GetWasteBankByID)
-	api.GET("/waste-categories", handlers.GetWasteCategories)
+	if wasteCategoryHandler != nil {
+		api.GET(
+			"/waste-categories",
+			wasteCategoryHandler.List,
+		)
+	} else {
+		api.GET(
+			"/waste-categories",
+			handlers.GetWasteCategories,
+		)
+	}
 
 	api.GET("/campaigns", handlers.GetCampaigns)
 	api.GET("/campaigns/:id", handlers.GetCampaignByID)
