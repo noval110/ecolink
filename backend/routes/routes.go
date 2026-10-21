@@ -4,25 +4,37 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/noval110/ecolink/backend/handlers"
+	"github.com/noval110/ecolink/backend/middleware"
 )
 
 func RegisterRoutes(e *echo.Echo) {
 	registerRoutes(
 		e,
 		handlers.NewAuthHandler(nil),
+		nil,
+		"",
 	)
 }
 
 func RegisterRoutesWithAuth(
 	e *echo.Echo,
 	authHandler *handlers.AuthHandler,
+	profileHandler *handlers.ProfileHandler,
+	jwtSecret string,
 ) {
-	registerRoutes(e, authHandler)
+	registerRoutes(
+		e,
+		authHandler,
+		profileHandler,
+		jwtSecret,
+	)
 }
 
 func registerRoutes(
 	e *echo.Echo,
 	authHandler *handlers.AuthHandler,
+	profileHandler *handlers.ProfileHandler,
+	jwtSecret string,
 ) {
 	api := e.Group("/api")
 
@@ -32,10 +44,20 @@ func registerRoutes(
 	auth.POST("/register", authHandler.Register)
 	auth.POST("/login", authHandler.Login)
 
-	api.GET("/me/dashboard", handlers.GetDashboard)
-	api.GET("/me/passport", handlers.GetPassport)
-	api.GET("/me/impact", handlers.GetMyImpact)
-	api.GET("/me/transactions", handlers.GetMyTransactions)
+	me := api.Group("/me")
+
+	if jwtSecret != "" {
+		me.Use(middleware.RequireAuth(jwtSecret))
+	}
+
+	if profileHandler != nil {
+		me.GET("/profile", profileHandler.GetProfile)
+	}
+
+	me.GET("/dashboard", handlers.GetDashboard)
+	me.GET("/passport", handlers.GetPassport)
+	me.GET("/impact", handlers.GetMyImpact)
+	me.GET("/transactions", handlers.GetMyTransactions)
 
 	api.GET("/waste-banks", handlers.GetWasteBanks)
 	api.GET("/waste-banks/:id/prices", handlers.GetWasteBankPrices)

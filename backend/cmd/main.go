@@ -30,6 +30,9 @@ func main() {
 	)
 	authHandler := handlers.NewAuthHandler(authService)
 
+	userRepository := repositories.NewUserRepository(db)
+	profileHandler := handlers.NewProfileHandler(userRepository)
+
 	e := echo.New()
 
 	e.Logger.Info("PostgreSQL connected successfully")
@@ -54,7 +57,12 @@ func main() {
 		},
 	}))
 
-	routes.RegisterRoutesWithAuth(e, authHandler)
+	routes.RegisterRoutesWithAuth(
+		e,
+		authHandler,
+		profileHandler,
+		cfg.JWTSecret,
+	)
 
 	e.Logger.Fatal(e.Start(":" + cfg.AppPort))
 }
