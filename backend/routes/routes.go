@@ -14,6 +14,7 @@ func RegisterRoutes(e *echo.Echo) {
 		nil,
 		nil,
 		nil,
+		nil,
 		"",
 	)
 }
@@ -24,6 +25,7 @@ func RegisterRoutesWithAuth(
 	profileHandler *handlers.ProfileHandler,
 	dashboardHandler *handlers.DashboardHandler,
 	wasteCategoryHandler *handlers.WasteCategoryHandler,
+	wasteBankHandler *handlers.WasteBankDBHandler,
 	jwtSecret string,
 ) {
 	registerRoutes(
@@ -32,6 +34,7 @@ func RegisterRoutesWithAuth(
 		profileHandler,
 		dashboardHandler,
 		wasteCategoryHandler,
+		wasteBankHandler,
 		jwtSecret,
 	)
 }
@@ -42,6 +45,7 @@ func registerRoutes(
 	profileHandler *handlers.ProfileHandler,
 	dashboardHandler *handlers.DashboardHandler,
 	wasteCategoryHandler *handlers.WasteCategoryHandler,
+	wasteBankHandler *handlers.WasteBankDBHandler,
 	jwtSecret string,
 ) {
 	api := e.Group("/api")
@@ -71,9 +75,16 @@ func registerRoutes(
 	me.GET("/impact", handlers.GetMyImpact)
 	me.GET("/transactions", handlers.GetMyTransactions)
 
-	api.GET("/waste-banks", handlers.GetWasteBanks)
-	api.GET("/waste-banks/:id/prices", handlers.GetWasteBankPrices)
-	api.GET("/waste-banks/:id", handlers.GetWasteBankByID)
+	if wasteBankHandler != nil {
+		api.GET("/waste-banks", wasteBankHandler.List)
+		api.GET("/waste-banks/:id/prices", wasteBankHandler.Prices)
+		api.GET("/waste-banks/:id", wasteBankHandler.Detail)
+	} else {
+		api.GET("/waste-banks", handlers.GetWasteBanks)
+		api.GET("/waste-banks/:id/prices", handlers.GetWasteBankPrices)
+		api.GET("/waste-banks/:id", handlers.GetWasteBankByID)
+	}
+
 	if wasteCategoryHandler != nil {
 		api.GET(
 			"/waste-categories",
