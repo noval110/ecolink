@@ -30,6 +30,40 @@ func NewCampaignDBHandler(
 	}
 }
 
+func (h *CampaignDBHandler) MyCampaigns(
+	c echo.Context,
+) error {
+	userID, ok := c.Get("user_id").(int64)
+	if !ok {
+		return utils.ErrorResponse(
+			c,
+			http.StatusUnauthorized,
+			"Invalid authenticated user",
+		)
+	}
+
+	campaigns, err :=
+		h.repository.ListByUser(
+			c.Request().Context(),
+			userID,
+		)
+
+	if err != nil {
+		return utils.ErrorResponse(
+			c,
+			http.StatusInternalServerError,
+			"Failed to load user campaigns",
+		)
+	}
+
+	return utils.SuccessResponse(
+		c,
+		http.StatusOK,
+		"User campaigns loaded",
+		campaigns,
+	)
+}
+
 func (h *CampaignDBHandler) List(
 	c echo.Context,
 ) error {

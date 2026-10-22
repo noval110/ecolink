@@ -17,6 +17,7 @@ func RegisterRoutes(e *echo.Echo) {
 		nil,
 		nil,
 		nil,
+		nil,
 		"",
 	)
 }
@@ -30,6 +31,7 @@ func RegisterRoutesWithAuth(
 	wasteBankHandler *handlers.WasteBankDBHandler,
 	campaignHandler *handlers.CampaignDBHandler,
 	transactionHandler *handlers.TransactionDBHandler,
+	passportHandler *handlers.PassportHandler,
 	jwtSecret string,
 ) {
 	registerRoutes(
@@ -41,6 +43,7 @@ func RegisterRoutesWithAuth(
 		wasteBankHandler,
 		campaignHandler,
 		transactionHandler,
+		passportHandler,
 		jwtSecret,
 	)
 }
@@ -54,6 +57,7 @@ func registerRoutes(
 	wasteBankHandler *handlers.WasteBankDBHandler,
 	campaignHandler *handlers.CampaignDBHandler,
 	transactionHandler *handlers.TransactionDBHandler,
+	passportHandler *handlers.PassportHandler,
 	jwtSecret string,
 ) {
 	api := e.Group("/api")
@@ -74,12 +78,29 @@ func registerRoutes(
 		me.GET("/profile", profileHandler.GetProfile)
 	}
 
+	if campaignHandler != nil {
+		me.GET(
+			"/campaigns",
+			campaignHandler.MyCampaigns,
+		)
+	}
+
 	if dashboardHandler != nil {
 		me.GET("/dashboard", dashboardHandler.GetDashboard)
 	} else {
 		me.GET("/dashboard", handlers.GetDashboard)
 	}
-	me.GET("/passport", handlers.GetPassport)
+	if passportHandler != nil {
+		me.GET(
+			"/passport",
+			passportHandler.GetPassport,
+		)
+	} else {
+		me.GET(
+			"/passport",
+			handlers.GetPassport,
+		)
+	}
 	me.GET("/impact", handlers.GetMyImpact)
 	if transactionHandler != nil && jwtSecret != "" {
 		me.GET(

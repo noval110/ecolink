@@ -57,6 +57,11 @@ func main() {
 		transactionRepository,
 	)
 
+	passportRepository := repositories.NewPassportRepository(db)
+	passportHandler := handlers.NewPassportHandler(
+		passportRepository,
+	)
+
 	e := echo.New()
 
 	e.Logger.Info("PostgreSQL connected successfully")
@@ -90,6 +95,7 @@ func main() {
 		wasteBankHandler,
 		campaignHandler,
 		transactionHandler,
+		passportHandler,
 		cfg.JWTSecret,
 	)
 

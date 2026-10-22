@@ -22,6 +22,7 @@ type Campaign struct {
 	Description        *string                    `json:"description,omitempty"`
 	TargetWeight       float64                    `json:"target_weight"`
 	CurrentWeight      float64                    `json:"current_weight"`
+	UserContribution   float64                    `json:"user_contribution"`
 	ProgressPercentage float64                    `json:"progress_percentage"`
 	Participants       int                        `json:"participants"`
 	StartDate          *string                    `json:"start_date,omitempty"`
@@ -40,6 +41,119 @@ func NewCampaignRepository(
 	return &CampaignRepository{
 		db: db,
 	}
+}
+
+func (r *CampaignRepository) ListByUser(
+	ctx context.Context,
+	userID int64,
+) ([]Campaign, error) {
+	rows, err := r.db.Query(
+		ctx,
+		`
+		SELECT
+			c.id,
+			c.title,
+			c.organization_id,
+			o.name,
+			c.description,
+
+			COALESCE(c.target_kg, 0)::float8,
+
+			COALESCE((
+				SELECT SUM(t.total_weight)
+				FROM transactions t
+				WHERE t.campaign_id = c.id
+				  AND t.status = 'verified'
+			), 0)::float8,
+
+			COALESCE((
+				SELECT SUM(t.total_weight)
+				FROM transactions t
+				WHERE t.campaign_id = c.id
+				  AND t.user_id = $1
+				  AND t.status = 'verified'
+			), 0)::float8,
+
+			(
+				SELECT COUNT(*)
+				FROM campaigners cp2
+				WHERE cp2.campaign_id = c.id
+			)::int,
+
+			c.start_date::text,
+			c.end_date::text,
+			c.status
+
+		FROM campaigners cp
+		JOIN campaigns c
+			ON c.id = cp.campaign_id
+		JOIN organizations o
+			ON o.id = c.organization_id
+
+		WHERE cp.user_id = $1
+		  AND cp.status = 'joined'
+
+		ORDER BY cp.joined_at DESC
+		`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	campaigns := make([]Campaign, 0)
+
+	for rows.Next() {
+		var campaign Campaign
+
+		err := rows.Scan(
+			&campaign.ID,
+			&campaign.Title,
+			&campaign.OrganizationID,
+			&campaign.Organization,
+			&campaign.Description,
+			&campaign.TargetWeight,
+			&campaign.CurrentWeight,
+			&campaign.UserContribution,
+			&campaign.Participants,
+			&campaign.StartDate,
+			&campaign.EndDate,
+			&campaign.Status,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		campaign.ProgressPercentage =
+			calculateCampaignProgress(
+				campaign.CurrentWeight,
+				campaign.TargetWeight,
+			)
+
+		partners, err :=
+			r.GetPartnerWasteBanks(
+				ctx,
+				campaign.ID,
+			)
+
+		if err != nil {
+			return nil, err
+		}
+
+		campaign.PartnerWasteBanks = partners
+
+		campaigns = append(
+			campaigns,
+			campaign,
+		)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return campaigns, nil
 }
 
 func (r *CampaignRepository) List(

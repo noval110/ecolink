@@ -57,6 +57,10 @@ export function getDashboard() {
   return request('/me/dashboard');
 }
 
+export function getPassport() {
+  return request('/me/passport');
+}
+
 export function getMyTransactions(status = '') {
   const query = status
     ? `?status=${encodeURIComponent(status)}`
