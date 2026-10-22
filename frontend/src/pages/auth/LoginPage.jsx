@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Link,
   useNavigate,
+  useSearchParams,
 } from 'react-router-dom';
 
 import {
@@ -21,6 +22,7 @@ import {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [role, setRole] = useState('user');
   const [email, setEmail] = useState('');
@@ -58,7 +60,9 @@ export default function LoginPage() {
       saveAuth(result.data);
 
       if (user.role === 'user') {
-        navigate('/app');
+        const redirect = searchParams.get('redirect');
+        const destination = /^\/campaigns\/[1-9]\d*$/.test(redirect || '') ? redirect : '/app';
+        navigate(destination, { replace: true });
         return;
       }
 

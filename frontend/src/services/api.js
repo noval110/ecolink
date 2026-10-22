@@ -77,6 +77,24 @@ export function getCampaigns() {
   return request('/campaigns');
 }
 
+export function getCampaignById(id) {
+  return request(`/campaigns/${id}`);
+}
+
+export function getWasteBankById(id) {
+  return request(`/waste-banks/${id}`);
+}
+
+export function getWasteBanks() {
+  return request('/waste-banks');
+}
+
+export function joinCampaign(id) {
+  return request(`/campaigns/${id}/join`, {
+    method: 'POST',
+  });
+}
+
 export function logoutUser() {
   localStorage.removeItem('ecolink_token');
   localStorage.removeItem('ecolink_user');

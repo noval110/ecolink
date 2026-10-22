@@ -1,11 +1,22 @@
-import React, { useState, useRef } from 'react';
-import { Search, MapPin, Navigation, Clock, Phone, ShieldCheck, ChevronRight, Filter, Award, Sparkles, Layers, Star, List, Map, X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, MapPin, Navigation, ChevronRight, List, Map, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { MOCK_WASTE_BANKS } from '../../data/mockData';
-import CustomDropdown from '../../components/CustomDropdown';
+import {
+  getWasteBanks,
+  getWasteBankById,
+} from '../../services/api';
+
+function getBankPosition(bank) {
+  if (bank.latitude == null || bank.longitude == null) return null;
+  const latitude = Number(bank.latitude);
+  const longitude = Number(bank.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+  return [latitude, longitude];
+}
 
 // Custom Marker for Leaflet
 const createMarkerIcon = (isSelected = false) => {
@@ -56,80 +67,118 @@ class MapErrorBoundary extends React.Component {
 function MapController({ center, zoom, mobileTab }) {
   const map = useMap();
 
-  // Invalidate map size when switching to map tab on mobile
-  React.useEffect(() => {
-    if (!map) return;
-    const timer = setTimeout(() => {
-      try {
-        map.invalidateSize();
-      } catch (err) {
-        // Ignore resize error if detached
-      }
-    }, 120);
-    return () => clearTimeout(timer);
-  }, [mobileTab, map]);
-
-  // Safely flyTo center only when container has non-zero size and valid coordinates
-  React.useEffect(() => {
+  useEffect(() => {
     if (!map || !center) return;
 
     const lat = Number(center[0]);
     const lng = Number(center[1]);
-    if (isNaN(lat) || isNaN(lng)) return;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-    try {
-      const size = map.getSize();
-      // If container is hidden (e.g. mobile list view), size is 0x0. Do not flyTo to avoid NaN crash.
-      if (!size || size.x === 0 || size.y === 0) {
-        return;
+    const timer = setTimeout(() => {
+      try {
+        map.invalidateSize();
+        const size = map.getSize();
+        if (!size || size.x === 0 || size.y === 0) return;
+        map.flyTo([lat, lng], zoom || 13, { duration: 1.2 });
+      } catch (err) {
+        console.warn('Map flyTo skipped:', err);
       }
-      map.flyTo([lat, lng], zoom || 14, { duration: 1.2 });
-    } catch (err) {
-      console.warn('Map flyTo skipped:', err);
-    }
-  }, [center, zoom, map]);
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [center, zoom, mobileTab, map]);
 
   return null;
 }
 
 export default function WasteBankDiscovery() {
+  const [banks, setBanks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMaterial, setSelectedMaterial] = useState('Semua');
-  const [selectedCity, setSelectedCity] = useState('Semua');
-  const [selectedBankId, setSelectedBankId] = useState(MOCK_WASTE_BANKS[0].id);
+  const [selectedBankId, setSelectedBankId] = useState(null);
   const [mobileTab, setMobileTab] = useState('list'); // 'list' | 'map'
-  const [mapCenter, setMapCenter] = useState(MOCK_WASTE_BANKS[0].position);
+  const [mapCenter, setMapCenter] = useState([-7.42, 109.24]);
   const [mapZoom, setMapZoom] = useState(13);
 
-  const materialsList = ['Semua', 'Plastik', 'Kertas', 'Logam', 'Minyak', 'Elektronik'];
-  const citiesList = ['Semua', 'Bandung', 'Jakarta Selatan', 'Surabaya', 'Yogyakarta', 'Denpasar / Badung'];
+  useEffect(() => {
+    let active = true;
 
-  // Filtered Banks
-  const filteredBanks = MOCK_WASTE_BANKS.filter((wb) => {
-    const matchesSearch =
-      wb.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      wb.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      wb.city.toLowerCase().includes(searchQuery.toLowerCase());
+    const loadBanks = async () => {
+      setLoading(true);
+      setError('');
 
-    const matchesMaterial =
-      selectedMaterial === 'Semua' ||
-      wb.materials.some((m) => m.category.toLowerCase() === selectedMaterial.toLowerCase());
+      try {
+        const result = await getWasteBanks();
+        const list = Array.isArray(result.data) ? result.data : [];
+        const detailedBanks = await Promise.all(
+          list.map(async (bank) => {
+            try {
+              const detail = await getWasteBankById(bank.id);
+              return {
+                ...bank,
+                accepted_materials: Array.isArray(detail.data?.accepted_materials)
+                  ? detail.data.accepted_materials
+                  : [],
+              };
+            } catch {
+              return { ...bank, accepted_materials: [] };
+            }
+          })
+        );
 
-    const matchesCity =
-      selectedCity === 'Semua' || wb.city.toLowerCase().includes(selectedCity.toLowerCase());
+        if (!active) return;
+        setBanks(detailedBanks);
 
-    return matchesSearch && matchesMaterial && matchesCity;
-  });
+        if (detailedBanks.length > 0) {
+          const first = detailedBanks[0];
+          setSelectedBankId(first.id);
+          const position = getBankPosition(first);
+          if (position) setMapCenter(position);
+        }
+      } catch (err) {
+        if (active) setError(err.message || 'Gagal memuat bank sampah.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadBanks();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const materialsList = useMemo(() => {
+    const names = banks.flatMap((bank) =>
+      bank.accepted_materials?.map((item) => item.name) || []
+    );
+    return ['Semua', ...new Set(names.filter(Boolean))];
+  }, [banks]);
+
+  const filteredBanks = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase();
+    return banks.filter((bank) => {
+      const matchesSearch =
+        bank.name?.toLowerCase().includes(keyword) ||
+        bank.address?.toLowerCase().includes(keyword);
+      const matchesMaterial =
+        selectedMaterial === 'Semua' ||
+        bank.accepted_materials?.some((material) => material.name === selectedMaterial);
+      return matchesSearch && matchesMaterial;
+    });
+  }, [banks, searchQuery, selectedMaterial]);
 
   const handleSelectBank = (bank) => {
     if (!bank) return;
     setSelectedBankId(bank.id);
-    if (bank.position && !isNaN(bank.position[0]) && !isNaN(bank.position[1])) {
-      setMapCenter(bank.position);
+    const position = getBankPosition(bank);
+    if (position) {
+      setMapCenter(position);
       setMapZoom(15);
     }
     // If mobile, switch to map view automatically on select
-    if (window.innerWidth <= 768) {
+    if (position && window.innerWidth <= 768) {
       setMobileTab('map');
     }
   };
@@ -176,15 +225,6 @@ export default function WasteBankDiscovery() {
               )}
             </div>
 
-            {/* Custom City Dropdown */}
-            <CustomDropdown
-              options={citiesList.map((c) => ({ value: c, label: c === 'Semua' ? 'Semua Kota' : c }))}
-              value={selectedCity}
-              onChange={setSelectedCity}
-              icon={MapPin}
-              placeholder="Pilih Kota"
-              className="city-custom-dropdown"
-            />
           </div>
 
           {/* Material Category Pills */}
@@ -235,23 +275,31 @@ export default function WasteBankDiscovery() {
                 Menampilkan <strong>{filteredBanks.length}</strong> Bank Sampah Mitra
               </span>
               <span className="verified-note">
-                <ShieldCheck size={14} className="text-emerald" /> 100% Terverifikasi
+                <MapPin size={14} className="text-emerald" /> Mitra EcoLink
               </span>
             </div>
 
-            {filteredBanks.length === 0 ? (
+            {loading ? (
+              <div className="discovery-empty-state" role="status">
+                <h4>Memuat bank sampah...</h4>
+              </div>
+            ) : error ? (
+              <div className="discovery-empty-state" role="alert">
+                <h4>Gagal Memuat Bank Sampah</h4>
+                <p>{error}</p>
+              </div>
+            ) : filteredBanks.length === 0 ? (
               <div className="discovery-empty-state">
                 <div className="empty-icon-box">
                   <MapPin size={32} color="rgba(255,255,255,0.4)" />
                 </div>
                 <h4>Tidak Ada Bank Sampah yang Sesuai</h4>
-                <p>Coba gunakan kata kunci lain atau reset filter material dan kota.</p>
+                <p>Coba gunakan kata kunci lain atau reset filter material.</p>
                 <button
                   type="button"
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedMaterial('Semua');
-                    setSelectedCity('Semua');
                   }}
                   className="btn btn-outline btn-sm"
                 >
@@ -268,54 +316,30 @@ export default function WasteBankDiscovery() {
                       className={`bank-discovery-card ${isSelected ? 'active-card' : ''}`}
                       onClick={() => handleSelectBank(bank)}
                     >
-                      <div className="bank-card-photo-header">
-                        <img src={bank.image} alt={bank.name} className="bank-card-thumb-img" loading="lazy" />
-                        <div className="bank-card-photo-overlay" />
-                        <div className="card-top-row">
-                          <div className="badge-verified-row">
-                            <span className="status-pill open-pill">
-                              <span className="status-dot"></span> {bank.status}
-                            </span>
-                            <span className="verified-pill">
-                              <ShieldCheck size={12} /> Mitra Resmi
-                            </span>
-                          </div>
-                          <div className="rating-pill">
-                            <Star size={13} fill="#fbbf24" color="#fbbf24" />
-                            <span>{bank.rating}</span>
-                            <span className="review-count">({bank.reviewCount})</span>
-                          </div>
-                        </div>
-                      </div>
-
                       <div className="bank-card-body">
+                        {bank.status && (
+                          <div className="card-top-row">
+                            <span className="status-pill open-pill">
+                              <span className="status-dot" /> {bank.status}
+                            </span>
+                          </div>
+                        )}
                         <h3 className="bank-name">{bank.name}</h3>
                         <p className="bank-address">
                           <MapPin size={15} className="text-emerald shrink-0" />
                           <span>{bank.address}</span>
                         </p>
 
-                        <div className="bank-stats-compact">
-                          <div className="stat-compact-item">
-                            <span className="stat-label">Total Daur Ulang</span>
-                            <span className="stat-val">{bank.totalRecycledKg.toLocaleString()} kg</span>
-                          </div>
-                          <div className="stat-compact-item">
-                            <span className="stat-label">Kontributor Aktif</span>
-                            <span className="stat-val">{bank.contributorsCount} orang</span>
-                          </div>
-                        </div>
-
                         {/* Material Tags */}
                         <div className="materials-tags-row">
-                          {bank.materials.slice(0, 4).map((m, idx) => (
-                            <span key={idx} className="material-tag">
-                              {m.name.split(' ')[0]} {m.name.split(' ')[1] || ''}
+                          {bank.accepted_materials?.slice(0, 4).map((material) => (
+                            <span key={material.waste_category_id} className="material-tag">
+                              {material.name}
                             </span>
                           ))}
-                          {bank.materials.length > 4 && (
+                          {bank.accepted_materials.length > 4 && (
                             <span className="material-tag more-tag">
-                              +{bank.materials.length - 4} lainnya
+                              +{bank.accepted_materials.length - 4} lainnya
                             </span>
                           )}
                         </div>
@@ -324,12 +348,13 @@ export default function WasteBankDiscovery() {
                           <button
                             type="button"
                             className="btn-locate-map"
+                            disabled={!getBankPosition(bank)}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSelectBank(bank);
                             }}
                           >
-                            <Navigation size={14} /> Pusatkan di Peta
+                            <Navigation size={14} /> {getBankPosition(bank) ? 'Pusatkan di Peta' : 'Koordinat belum tersedia'}
                           </button>
                           <Link
                             to={`/waste-banks/${bank.id}`}
@@ -367,12 +392,13 @@ export default function WasteBankDiscovery() {
                   <MapController center={mapCenter} zoom={mapZoom} mobileTab={mobileTab} />
 
                   {filteredBanks.map((bank) => {
-                    if (!bank.position || isNaN(bank.position[0]) || isNaN(bank.position[1])) return null;
+                    const position = getBankPosition(bank);
+                    if (!position) return null;
                     const isSelected = bank.id === selectedBankId;
                     return (
                       <Marker
                         key={bank.id}
-                        position={bank.position}
+                        position={position}
                         icon={createMarkerIcon(isSelected)}
                         eventHandlers={{
                           click: () => {
@@ -391,9 +417,6 @@ export default function WasteBankDiscovery() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                               <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#16a34a' }}>
                                 ● {bank.status}
-                              </span>
-                              <span style={{ fontSize: '0.75rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                <Star size={12} fill="#fbbf24" color="#fbbf24" /> {bank.rating} ({bank.reviewCount})
                               </span>
                             </div>
                             <Link
@@ -422,7 +445,7 @@ export default function WasteBankDiscovery() {
 
               <div className="map-overlay-info">
                 <span className="dot-pulse"></span>
-                <span>Klik marker untuk info lokasi & navigasi rute</span>
+                <span>Klik marker untuk informasi bank sampah</span>
               </div>
             </div>
           </div>
