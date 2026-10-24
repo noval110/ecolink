@@ -53,12 +53,27 @@ export function getProfile() {
   return request('/me/profile');
 }
 
+export function updateProfile(payload) {
+  return request('/me/profile', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getDashboard() {
   return request('/me/dashboard');
 }
 
 export function getPassport() {
   return request('/me/passport');
+}
+
+export function getMyMissions() {
+  return request('/me/missions');
+}
+
+export function getMyBadges() {
+  return request('/me/badges');
 }
 
 export function getMyTransactions(status = '') {
@@ -71,6 +86,20 @@ export function getMyTransactions(status = '') {
 
 export function getTransactionById(id) {
   return request(`/transactions/${id}`);
+}
+
+export function getBankTransactions(status = '') {
+  const query = status
+    ? `?status=${encodeURIComponent(status)}`
+    : '';
+
+  return request(`/bank/transactions${query}`);
+}
+
+export function verifyTransaction(id) {
+  return request(`/transactions/${id}/verify`, {
+    method: 'PUT',
+  });
 }
 
 export function getMyCampaigns() {
@@ -120,6 +149,18 @@ export function getStoredUser() {
   } catch {
     return null;
   }
+}
+
+export function updateStoredUser(user) {
+  const current = getStoredUser() || {};
+
+  localStorage.setItem(
+    'ecolink_user',
+    JSON.stringify({
+      ...current,
+      ...user,
+    })
+  );
 }
 
 export function isAuthenticated() {

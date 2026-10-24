@@ -18,6 +18,7 @@ func RegisterRoutes(e *echo.Echo) {
 		nil,
 		nil,
 		nil,
+		nil,
 		"",
 	)
 }
@@ -32,6 +33,7 @@ func RegisterRoutesWithAuth(
 	campaignHandler *handlers.CampaignDBHandler,
 	transactionHandler *handlers.TransactionDBHandler,
 	passportHandler *handlers.PassportHandler,
+	gamificationHandler *handlers.GamificationHandler,
 	jwtSecret string,
 ) {
 	registerRoutes(
@@ -44,6 +46,7 @@ func RegisterRoutesWithAuth(
 		campaignHandler,
 		transactionHandler,
 		passportHandler,
+		gamificationHandler,
 		jwtSecret,
 	)
 }
@@ -58,6 +61,7 @@ func registerRoutes(
 	campaignHandler *handlers.CampaignDBHandler,
 	transactionHandler *handlers.TransactionDBHandler,
 	passportHandler *handlers.PassportHandler,
+	gamificationHandler *handlers.GamificationHandler,
 	jwtSecret string,
 ) {
 	api := e.Group("/api")
@@ -68,14 +72,32 @@ func registerRoutes(
 	auth.POST("/register", authHandler.Register)
 	auth.POST("/login", authHandler.Login)
 
+	if transactionHandler != nil && jwtSecret != "" {
+		bank := api.Group("/bank")
+		bank.Use(middleware.RequireAuth(jwtSecret))
+		bank.GET("/transactions", transactionHandler.BankTransactions)
+	}
+
 	me := api.Group("/me")
 
 	if jwtSecret != "" {
 		me.Use(middleware.RequireAuth(jwtSecret))
 	}
 
+	if gamificationHandler != nil && jwtSecret != "" {
+		me.GET(
+			"/missions",
+			gamificationHandler.MyMissions,
+		)
+		me.GET(
+			"/badges",
+			gamificationHandler.MyBadges,
+		)
+	}
+
 	if profileHandler != nil {
 		me.GET("/profile", profileHandler.GetProfile)
+		me.PUT("/profile", profileHandler.Update)
 	}
 
 	if campaignHandler != nil {

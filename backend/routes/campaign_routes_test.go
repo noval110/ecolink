@@ -33,7 +33,7 @@ func TestCampaignJoinAuthorization(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), nil, nil, nil, nil,
-		handlers.NewCampaignDBHandler(nil), nil, nil, secret,
+		handlers.NewCampaignDBHandler(nil), nil, nil, nil, secret,
 	)
 
 	tests := []struct {
@@ -69,7 +69,7 @@ func TestCampaignJoinUnavailableWithoutJWTSecret(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), nil, nil, nil, nil,
-		handlers.NewCampaignDBHandler(nil), nil, nil, "",
+		handlers.NewCampaignDBHandler(nil), nil, nil, nil, "",
 	)
 	response := httptest.NewRecorder()
 	e.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/campaigns/1/join", nil))
@@ -82,7 +82,7 @@ func TestCampaignDetailRemainsPublic(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), nil, nil, nil, nil,
-		handlers.NewCampaignDBHandler(nil), nil, nil, "test-secret",
+		handlers.NewCampaignDBHandler(nil), nil, nil, nil, "test-secret",
 	)
 	response := httptest.NewRecorder()
 	e.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/campaigns/invalid", nil))

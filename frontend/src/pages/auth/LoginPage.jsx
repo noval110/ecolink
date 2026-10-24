@@ -19,6 +19,7 @@ import {
   loginUser,
   saveAuth,
 } from '../../services/api';
+import { getHomeForRole } from '../../components/ProtectedRoute';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -61,16 +62,12 @@ export default function LoginPage() {
 
       if (user.role === 'user') {
         const redirect = searchParams.get('redirect');
-        const destination = /^\/campaigns\/[1-9]\d*$/.test(redirect || '') ? redirect : '/app';
+        const destination = /^\/campaigns\/[1-9]\d*$/.test(redirect || '') ? redirect : getHomeForRole(user.role);
         navigate(destination, { replace: true });
         return;
       }
 
-      /*
-       * Dashboard organization dan waste bank
-       * belum kita implementasikan.
-       */
-      navigate('/');
+      navigate(getHomeForRole(user.role), { replace: true });
     } catch (err) {
       setError(
         err.message || 'Login gagal.'

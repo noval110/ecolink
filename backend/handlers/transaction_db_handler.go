@@ -68,6 +68,57 @@ func (h *TransactionDBHandler) MyTransactions(
 	)
 }
 
+func (h *TransactionDBHandler) BankTransactions(
+	c echo.Context,
+) error {
+	userID, ok := c.Get("user_id").(int64)
+	if !ok {
+		return utils.ErrorResponse(
+			c,
+			http.StatusUnauthorized,
+			"Invalid authenticated user",
+		)
+	}
+
+	role, _ := c.Get("role").(string)
+	if role != "waste_bank" {
+		return utils.ErrorResponse(
+			c,
+			http.StatusForbidden,
+			"Only waste bank users can access this resource",
+		)
+	}
+
+	status := c.QueryParam("status")
+	if status != "" && status != "pending" && status != "verified" {
+		return utils.ErrorResponse(
+			c,
+			http.StatusBadRequest,
+			"Invalid transaction status",
+		)
+	}
+
+	transactions, err := h.repository.ListForBankUser(
+		c.Request().Context(),
+		userID,
+		status,
+	)
+	if err != nil {
+		return utils.ErrorResponse(
+			c,
+			http.StatusInternalServerError,
+			"Failed to load bank transactions",
+		)
+	}
+
+	return utils.SuccessResponse(
+		c,
+		http.StatusOK,
+		"Bank transactions loaded",
+		transactions,
+	)
+}
+
 func (h *TransactionDBHandler) Detail(
 	c echo.Context,
 ) error {

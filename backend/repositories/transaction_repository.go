@@ -62,6 +62,25 @@ type TransactionHistoryItem struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type BankTransactionListItem struct {
+	ID int64 `json:"id"`
+
+	UserID   int64  `json:"user_id"`
+	UserName string `json:"user_name"`
+
+	WasteBankID   int64  `json:"waste_bank_id"`
+	WasteBankName string `json:"waste_bank_name"`
+
+	CampaignID    *int64  `json:"campaign_id,omitempty"`
+	CampaignTitle *string `json:"campaign_title,omitempty"`
+
+	TotalWeight float64 `json:"total_weight"`
+	TotalValue  float64 `json:"total_value"`
+
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type TransactionDetail struct {
 	ID          int64                    `json:"transaction_id"`
 	UserID      int64                    `json:"user_id"`
@@ -157,6 +176,78 @@ func (r *TransactionRepository) ListByUser(
 	}
 
 	return result, rows.Err()
+}
+
+func (r *TransactionRepository) ListForBankUser(
+	ctx context.Context,
+	bankUserID int64,
+	status string,
+) ([]BankTransactionListItem, error) {
+	rows, err := r.db.Query(
+		ctx,
+		`
+		SELECT
+			t.id,
+			t.user_id,
+			u.full_name,
+			t.waste_bank_id,
+			wb.name,
+			t.campaign_id,
+			c.title,
+			t.total_weight::float8,
+			t.total_value::float8,
+			t.status,
+			t.created_at
+		FROM transactions t
+		JOIN users u
+			ON u.id = t.user_id
+		JOIN waste_banks wb
+			ON wb.id = t.waste_bank_id
+		JOIN waste_bank_members wbm
+			ON wbm.waste_bank_id = t.waste_bank_id
+			AND wbm.user_id = $1
+		LEFT JOIN campaigns c
+			ON c.id = t.campaign_id
+		WHERE ($2 = '' OR t.status = $2)
+		ORDER BY t.created_at DESC
+		`,
+		bankUserID,
+		status,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]BankTransactionListItem, 0)
+
+	for rows.Next() {
+		var item BankTransactionListItem
+
+		if err := rows.Scan(
+			&item.ID,
+			&item.UserID,
+			&item.UserName,
+			&item.WasteBankID,
+			&item.WasteBankName,
+			&item.CampaignID,
+			&item.CampaignTitle,
+			&item.TotalWeight,
+			&item.TotalValue,
+			&item.Status,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }
 
 func (r *TransactionRepository) GetByID(

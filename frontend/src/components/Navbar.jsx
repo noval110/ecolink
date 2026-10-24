@@ -88,7 +88,7 @@ export default function Navbar() {
               <span className="nav-login-link">
                 {currentUser?.full_name || 'Akun'}
               </span>
-              <Link to="/app" className="nav-register-btn" onClick={() => setIsOpen(false)}>
+              <Link to="/dashboard" className="nav-register-btn" onClick={() => setIsOpen(false)}>
                 <span>Dashboard</span>
                 <ArrowRight size={14} />
               </Link>
@@ -136,7 +136,7 @@ export default function Navbar() {
 
             <div className="mobile-drawer-actions">
               {loggedIn ? (
-                <Link to="/app" className="btn btn-light-green w-100 justify-center" onClick={() => setIsOpen(false)}>
+                <Link to="/dashboard" className="btn btn-light-green w-100 justify-center" onClick={() => setIsOpen(false)}>
                   Buka Dashboard
                 </Link>
               ) : (

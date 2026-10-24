@@ -18,6 +18,7 @@ import {
   registerUser,
   saveAuth,
 } from '../../services/api';
+import { getHomeForRole } from '../../components/ProtectedRoute';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -64,14 +65,7 @@ export default function RegisterPage() {
 
       saveAuth(result.data);
 
-      if (
-        result.data.user.role === 'user'
-      ) {
-        navigate('/app');
-        return;
-      }
-
-      navigate('/');
+      navigate(getHomeForRole(result.data.user.role), { replace: true });
     } catch (err) {
       setError(
         err.message ||

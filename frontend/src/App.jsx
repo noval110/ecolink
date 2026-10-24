@@ -13,6 +13,9 @@ import RegisterPage from './pages/auth/RegisterPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
+import RoleHomeRedirect from './components/RoleHomeRedirect';
+import BankDashboardPage from './pages/bank/BankDashboardPage';
+import OrganizationDashboardPage from './pages/organization/OrganizationDashboardPage';
 
 import UserDashboard from './pages/app/UserDashboard';
 import EcoPassportPage from './pages/app/EcoPassportPage';
@@ -45,7 +48,7 @@ function App() {
         <Route
           path="/app"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['user']}>
               <DashboardLayout />
             </ProtectedRoute>
           }
@@ -56,12 +59,30 @@ function App() {
           <Route path="rewards" element={<UserRewardsPage />} />
           <Route path="transactions" element={<UserTransactionsPage />} />
           <Route path="campaigns" element={<UserCampaignsPage />} />
-          <Route path="badges" element={<UserMissionsPage />} />
+          <Route path="missions" element={<UserMissionsPage />} />
+          <Route path="badges" element={<Navigate to="/app/missions" replace />} />
           <Route path="profile" element={<UserProfilePage />} />
         </Route>
 
-        {/* Alias /dashboard redirected to /app */}
-        <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+        <Route
+          path="/bank"
+          element={
+            <ProtectedRoute allowedRoles={['waste_bank']}>
+              <BankDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/organization"
+          element={
+            <ProtectedRoute allowedRoles={['organization']}>
+              <OrganizationDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Dashboard entry follows the authenticated account's role. */}
+        <Route path="/dashboard" element={<RoleHomeRedirect />} />
       </Routes>
     </Router>
   );

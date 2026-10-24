@@ -1,425 +1,657 @@
-import React, { useState, useEffect } from 'react';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
+
 import {
   User,
   Mail,
   Phone,
-  Building2,
-  MapPin,
   ShieldCheck,
   Save,
   Check,
-  Lock,
-  QrCode,
-  Bell,
-  Sparkles,
-  Users,
-  GraduationCap,
-  Briefcase,
-  HelpCircle,
-  Award
+  Leaf,
+  Scale,
+  Award,
+  Calendar,
 } from 'lucide-react';
-import { USER_PROFILES, getActiveUser, switchUserProfile } from '../../data/mockUserData';
+
+import {
+  getProfile,
+  getPassport,
+  getDashboard,
+  updateProfile,
+  updateStoredUser,
+} from '../../services/api';
+
+function formatDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+
+  return new Intl.DateTimeFormat(
+    'id-ID',
+    {
+      dateStyle: 'long',
+      timeZone: 'Asia/Jakarta',
+    }
+  ).format(date);
+}
 
 export default function UserProfilePage() {
-  const [currentUser, setCurrentUser] = useState(getActiveUser());
-  const [selectedType, setSelectedType] = useState(currentUser.profileType || 'mahasiswa');
-  
-  const [formData, setFormData] = useState({
-    name: currentUser.name,
-    email: currentUser.email,
-    phone: currentUser.phone,
-    institution: currentUser.institution,
-    faculty: currentUser.faculty,
-    identifierNumber: currentUser.identifierNumber || '',
-    city: currentUser.city,
-    province: currentUser.province || 'Jawa Barat',
-    notifTransaction: true,
-    notifCampaign: true
-  });
+  const [profile, setProfile] =
+    useState(null);
 
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [passport, setPassport] =
+    useState(null);
 
-  // Sync state when active user changes or user switches demo profile
-  const handleSwitchDemoProfile = (typeKey) => {
-    setSelectedType(typeKey);
-    const newProfile = switchUserProfile(typeKey);
-    setCurrentUser(newProfile);
-    setFormData({
-      name: newProfile.name,
-      email: newProfile.email,
-      phone: newProfile.phone,
-      institution: newProfile.institution,
-      faculty: newProfile.faculty,
-      identifierNumber: newProfile.identifierNumber || '',
-      city: newProfile.city,
-      province: newProfile.province || 'Jawa Barat',
-      notifTransaction: true,
-      notifCampaign: true
+  const [dashboard, setDashboard] =
+    useState(null);
+
+  const [formData, setFormData] =
+    useState({
+      full_name: '',
+      email: '',
+      phone: '',
     });
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
+
+  const [error, setError] =
+    useState('');
+
+  const [savedSuccess, setSavedSuccess] =
+    useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const loadProfile = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const [
+          profileResult,
+          passportResult,
+          dashboardResult,
+        ] = await Promise.all([
+          getProfile(),
+          getPassport(),
+          getDashboard(),
+        ]);
+
+        const profileData =
+          profileResult.data;
+
+        if (!active) return;
+        if (!profileData) throw new Error('Data profil tidak tersedia.');
+        setProfile(profileData);
+        setPassport(
+          passportResult.data
+        );
+
+        setDashboard(
+          dashboardResult.data
+        );
+
+        setFormData({
+          full_name:
+            profileData.full_name || '',
+          email:
+            profileData.email || '',
+          phone:
+            profileData.phone || '',
+        });
+      } catch (err) {
+        if (!active) return;
+        setError(
+          err.message ||
+            'Gagal memuat profil.'
+        );
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadProfile();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!savedSuccess) return;
+    const timer = setTimeout(() => setSavedSuccess(false), 3000);
+    return () => clearTimeout(timer);
+  }, [savedSuccess]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (saving) return;
+
+    setSaving(true);
+    setError('');
     setSavedSuccess(false);
+
+    try {
+      const result =
+        await updateProfile({
+          full_name:
+            formData.full_name,
+          email:
+            formData.email,
+          phone:
+            formData.phone ||
+            null,
+        });
+
+      setProfile(result.data);
+      setFormData({
+        full_name: result.data.full_name || '',
+        email: result.data.email || '',
+        phone: result.data.phone || '',
+      });
+
+      updateStoredUser(
+        { ...result.data, phone: result.data.phone ?? null }
+      );
+
+      window.dispatchEvent(
+        new Event(
+          'ecolink_profile_changed'
+        )
+      );
+
+      setSavedSuccess(true);
+
+    } catch (err) {
+      setError(
+        err.message ||
+          'Gagal memperbarui profil.'
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Update active profile in state
-    const updated = {
-      ...currentUser,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      institution: formData.institution,
-      faculty: formData.faculty,
-      identifierNumber: formData.identifierNumber,
-      city: formData.city,
-      province: formData.province
-    };
-    setCurrentUser(updated);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3500);
-  };
+  if (loading) {
+    return (
+      <div className="user-profile-page" role="status">
+        <h3>Memuat profil...</h3>
+      </div>
+    );
+  }
+
+  if (error && !profile) {
+    return (
+      <div className="user-profile-page">
+        <h3>
+          Profil tidak dapat dimuat
+        </h3>
+
+        <p role="alert">{error}</p>
+      </div>
+    );
+  }
+
+  const passportID =
+    passport?.passport_id || '-';
+
+  const totalRecycled =
+    dashboard?.stats?.total_recycled ??
+    passport?.stats?.total_recycled ??
+    0;
+
+  const ecoScore =
+    dashboard?.stats?.eco_score ??
+    passport?.stats?.eco_score ??
+    0;
+
+  const co2Avoided =
+    dashboard?.impact_summary?.co2_avoided ??
+    passport?.stats?.co2_avoided ??
+    0;
 
   return (
     <div className="user-profile-page">
-      {/* Header */}
+
+      {/* HEADER */}
       <div className="page-header-row">
         <div>
+
           <div className="inline-badge-tiny">
-            <User size={14} className="text-emerald" />
-            <span>Pengaturan Akun & Identitas Inklusif</span>
+            <User
+              size={14}
+              className="text-emerald"
+            />
+
+            <span>
+              Profil & Akun
+            </span>
           </div>
-          <h1 className="page-title">Profil Pengguna EcoLink</h1>
+
+          <h1 className="page-title">
+            Profil Pengguna EcoLink
+          </h1>
+
           <p className="page-sub">
-            EcoLink dapat digunakan oleh seluruh elemen masyarakat: warga mandiri, komunitas perumahan/RT-RW, pelajar/mahasiswa, maupun pegawai perusahaan.
+            Kelola informasi akun yang
+            tersimpan di EcoLink.
           </p>
-        </div>
-      </div>
 
-      {/* Profile Type Selector Banner (Inclusivity Showcase) */}
-      <div className="dash-card profile-type-selector-banner">
-        <div className="selector-banner-intro">
-          <div className="intro-badge">
-            <Sparkles size={15} className="text-emerald" />
-            <span>Kategori Pengguna Aktif</span>
-          </div>
-          <h3>Pilih Tipe Profil / Afiliasi Kamu</h3>
-          <p>
-            EcoLink tidak hanya untuk mahasiswa. Setiap individu berhak mencatat dampak daur ulang terverifikasi melalui komunitas atau instansinya masing-masing.
-          </p>
-        </div>
-
-        <div className="profile-type-cards-row">
-          {/* Card 1: Warga Umum */}
-          <div
-            className={`type-option-card ${selectedType === 'warga' ? 'active' : ''}`}
-            onClick={() => handleSwitchDemoProfile('warga')}
-          >
-            <div className="type-icon-circle warga">
-              <Users size={20} />
-            </div>
-            <div className="type-card-text">
-              <strong>Masyarakat Umum / Warga</strong>
-              <span>Warga mandiri, ibu rumah tangga, komunitas RT/RW & kelurahan</span>
-            </div>
-            {selectedType === 'warga' && (
-              <span className="type-active-badge">
-                <Check size={12} /> Aktif
-              </span>
-            )}
-          </div>
-
-          {/* Card 2: Mahasiswa / Pelajar */}
-          <div
-            className={`type-option-card ${selectedType === 'mahasiswa' ? 'active' : ''}`}
-            onClick={() => handleSwitchDemoProfile('mahasiswa')}
-          >
-            <div className="type-icon-circle mahasiswa">
-              <GraduationCap size={20} />
-            </div>
-            <div className="type-card-text">
-              <strong>Mahasiswa & Pelajar</strong>
-              <span>Terhubung dengan BEM, program studi, dan kompetisi hijau kampus</span>
-            </div>
-            {selectedType === 'mahasiswa' && (
-              <span className="type-active-badge">
-                <Check size={12} /> Aktif
-              </span>
-            )}
-          </div>
-
-          {/* Card 3: Pegawai / Komunitas Kantor */}
-          <div
-            className={`type-option-card ${selectedType === 'karyawan' ? 'active' : ''}`}
-            onClick={() => handleSwitchDemoProfile('karyawan')}
-          >
-            <div className="type-icon-circle karyawan">
-              <Briefcase size={20} />
-            </div>
-            <div className="type-card-text">
-              <strong>Karyawan & Profesional</strong>
-              <span>Program keberlanjutan kantor, instansi, atau program ESG korporasi</span>
-            </div>
-            {selectedType === 'karyawan' && (
-              <span className="type-active-badge">
-                <Check size={12} /> Aktif
-              </span>
-            )}
-          </div>
         </div>
       </div>
 
       {savedSuccess && (
-        <div className="claim-reward-toast fade-in" style={{ borderColor: 'var(--color-primary)' }}>
-          <Check size={18} className="text-emerald shrink-0" />
-          <span>Profil berhasil diperbarui dan diselaraskan dengan Eco Passport!</span>
+        <div
+          className="claim-reward-toast fade-in"
+          role="status"
+        >
+          <Check
+            size={18}
+            className="text-emerald"
+          />
+
+          <span>
+            Profil berhasil diperbarui.
+          </span>
+        </div>
+      )}
+
+      {error && (
+        <div
+          className="claim-reward-toast"
+          role="alert"
+        >
+          <span>{error}</span>
         </div>
       )}
 
       <div className="profile-layout-grid">
-        {/* Left Column: Profile Card Overview */}
+
+        {/* PROFILE OVERVIEW */}
         <div className="profile-overview-col">
+
           <div className="dash-card profile-card-hero">
-            <div className="profile-hero-avatar-wrap">
-              <img src={currentUser.avatar} alt={currentUser.name} className="profile-hero-avatar" />
-              <div className="verify-seal" title="Identitas Terverifikasi Resmi">
-                <ShieldCheck size={14} color="#062415" />
+
+            <div
+              className="profile-hero-avatar-wrap"
+            >
+              <div
+                style={{
+                  width: '96px',
+                  height: '96px',
+                  borderRadius: '50%',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '2rem',
+                  fontWeight: 700,
+                  background:
+                    'rgba(52,211,153,.2)',
+                }}
+              >
+                {profile.full_name
+                  ?.charAt(0)
+                  .toUpperCase()}
+              </div>
+
+              <div className="verify-seal">
+                <ShieldCheck
+                  size={14}
+                  color="#062415"
+                />
               </div>
             </div>
 
             <div className="profile-category-tag">
-              {currentUser.categoryLabel}
+              {profile.role}
             </div>
 
-            <h3 className="profile-hero-name">{currentUser.name}</h3>
-            <span className="profile-hero-role">{currentUser.role}</span>
-            <span className="profile-hero-inst">{currentUser.affiliationDetail}</span>
+            <h3 className="profile-hero-name">
+              {profile.full_name}
+            </h3>
+
+            <span className="profile-hero-role">
+              {profile.email}
+            </span>
 
             <div className="profile-passport-id-box">
-              <span className="lbl">ID PASPOR LINGKUNGAN RESMI</span>
-              <strong className="val">{currentUser.passportId}</strong>
+
+              <span className="lbl">
+                ID ECO PASSPORT
+              </span>
+
+              <strong className="val">
+                {passportID}
+              </strong>
+
             </div>
 
             <div className="profile-quick-stats">
+
               <div className="p-stat">
-                <strong className="p-val">{currentUser.totalRecycledKg} kg</strong>
-                <span className="p-lbl">Daur Ulang</span>
+                <strong className="p-val">
+                  {totalRecycled} kg
+                </strong>
+
+                <span className="p-lbl">
+                  Daur Ulang
+                </span>
               </div>
+
               <div className="p-divider" />
+
               <div className="p-stat">
-                <strong className="p-val text-gold">{currentUser.points}</strong>
-                <span className="p-lbl">Poin</span>
+                <strong className="p-val text-gold">
+                  {ecoScore}
+                </strong>
+
+                <span className="p-lbl">
+                  Eco Score
+                </span>
               </div>
+
               <div className="p-divider" />
+
               <div className="p-stat">
-                <strong className="p-val text-emerald">Lv {currentUser.level}</strong>
-                <span className="p-lbl">Level</span>
+                <strong className="p-val text-emerald">
+                  {co2Avoided} kg
+                </strong>
+
+                <span className="p-lbl">
+                  CO₂ Terhindar
+                </span>
               </div>
+
             </div>
+
           </div>
 
           <div className="dash-card security-note-card">
+
             <div className="security-note-top">
-              <Lock size={18} className="text-emerald" />
-              <strong>Keamanan Akun & Validasi Timbangan</strong>
+
+              <ShieldCheck
+                size={18}
+                className="text-emerald"
+              />
+
+              <strong>
+                Informasi Akun
+              </strong>
+
             </div>
+
             <p>
-              Akunmu terhubung dengan standar audit transaksi EcoLink. Setiap timbangan fisik wajib diotorisasi oleh petugas resmi Bank Sampah menggunakan kode QR paspormu.
+              Statistik akun dihitung
+              berdasarkan transaksi
+              penyetoran yang telah
+              diverifikasi oleh Bank
+              Sampah EcoLink.
             </p>
-            <span className="security-date">Terdaftar sejak: {currentUser.joinDate}</span>
+
+            <span className="security-date">
+              Terdaftar sejak:{' '}
+              {formatDate(
+                profile.created_at
+              )}
+            </span>
+
           </div>
+
         </div>
 
-        {/* Right Column: Dynamic Form Fields */}
+        {/* FORM */}
         <div className="profile-form-col">
-          <form className="dash-card profile-form-card" onSubmit={handleSubmit}>
+
+          <form
+            className="dash-card profile-form-card"
+            onSubmit={handleSubmit}
+          >
+
             <div className="form-card-header">
+
               <div>
-                <h3 className="dash-card-title">Informasi Pribadi & Identitas Afiliasi</h3>
+
+                <h3 className="dash-card-title">
+                  Informasi Pribadi
+                </h3>
+
                 <span className="dash-card-sub">
-                  {selectedType === 'warga' && 'Data wilayah domisili dan komunitas untuk pencatatan di Bank Sampah kelurahan'}
-                  {selectedType === 'mahasiswa' && 'Data universitas dan program studi untuk penghitungan leaderboard fakultas'}
-                  {selectedType === 'karyawan' && 'Data instansi/perusahaan untuk laporan keberlanjutan kantor'}
+                  Data berikut tersimpan
+                  langsung di akun EcoLink.
                 </span>
+
               </div>
+
             </div>
 
             <div className="profile-form-fields">
-              {/* Field: Nama Lengkap */}
-              <div className="form-field-group">
-                <label>Nama Lengkap</label>
-                <div className="input-with-icon">
-                  <User size={16} className="input-icon" />
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
 
-              {/* Dynamic Field 1: Institution / Community / Company */}
               <div className="form-field-group">
-                <label>
-                  {selectedType === 'warga' && 'Komunitas Warga / Wilayah RT-RW'}
-                  {selectedType === 'mahasiswa' && 'Institusi / Universitas / Sekolah'}
-                  {selectedType === 'karyawan' && 'Nama Perusahaan / Instansi Kantor'}
+
+                <label htmlFor="profile-full-name">
+                  Nama Lengkap
                 </label>
+
                 <div className="input-with-icon">
-                  <Building2 size={16} className="input-icon" />
+
+                  <User
+                    size={16}
+                    className="input-icon"
+                  />
+
                   <input
+                    id="profile-full-name"
                     type="text"
-                    value={formData.institution}
-                    onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
-                    placeholder={
-                      selectedType === 'warga' ? 'Contoh: Komunitas Sukabirus Asri' :
-                      selectedType === 'mahasiswa' ? 'Contoh: Universitas Telkom' : 'Contoh: PT Telkom Akses'
+                    disabled={saving}
+                    value={
+                      formData.full_name
+                    }
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        full_name:
+                          e.target.value,
+                      })
                     }
                     required
                   />
+
                 </div>
               </div>
 
-              {/* Dynamic Field 2: Faculty / Sub-community / Division */}
               <div className="form-field-group">
-                <label>
-                  {selectedType === 'warga' && 'Lingkungan / RW / Kelurahan'}
-                  {selectedType === 'mahasiswa' && 'Fakultas / Program Studi'}
-                  {selectedType === 'karyawan' && 'Divisi / Unit Kerja'}
+
+                <label htmlFor="profile-email">
+                  Alamat Email
                 </label>
-                <div className="input-with-icon">
-                  {selectedType === 'warga' && <MapPin size={16} className="input-icon" />}
-                  {selectedType === 'mahasiswa' && <GraduationCap size={16} className="input-icon" />}
-                  {selectedType === 'karyawan' && <Briefcase size={16} className="input-icon" />}
-                  <input
-                    type="text"
-                    value={formData.faculty}
-                    onChange={(e) => setFormData({ ...formData, faculty: e.target.value })}
-                    placeholder={
-                      selectedType === 'warga' ? 'Contoh: RT 04 / RW 02 Dayeuhkolot' :
-                      selectedType === 'mahasiswa' ? 'Contoh: Fakultas Informatika' : 'Contoh: Divisi HSE & Operasional'
-                    }
-                    required
-                  />
-                </div>
-              </div>
 
-              {/* Dynamic Field 3: Identifier (NIM, NIK, or ID Warga) */}
-              <div className="form-field-group">
-                <label>
-                  {selectedType === 'warga' && 'Nomor Identitas Warga / KK (Opsional)'}
-                  {selectedType === 'mahasiswa' && 'NIM (Nomor Induk Mahasiswa)'}
-                  {selectedType === 'karyawan' && 'NIK (Nomor Induk Karyawan)'}
-                </label>
                 <div className="input-with-icon">
-                  <ShieldCheck size={16} className="input-icon" />
-                  <input
-                    type="text"
-                    value={formData.identifierNumber}
-                    onChange={(e) => setFormData({ ...formData, identifierNumber: e.target.value })}
-                    placeholder={
-                      selectedType === 'warga' ? 'Opsional untuk validasi bansos lingkungan' :
-                      selectedType === 'mahasiswa' ? 'Contoh: 1301223048' : 'Contoh: NIK-882910'
-                    }
-                  />
-                </div>
-              </div>
 
-              {/* Field: Email */}
-              <div className="form-field-group">
-                <label>Alamat Email</label>
-                <div className="input-with-icon">
-                  <Mail size={16} className="input-icon" />
+                  <Mail
+                    size={16}
+                    className="input-icon"
+                  />
+
                   <input
+                    id="profile-email"
                     type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled={saving}
+                    value={
+                      formData.email
+                    }
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        email:
+                          e.target.value,
+                      })
+                    }
                     required
                   />
+
                 </div>
               </div>
 
-              {/* Field: WhatsApp */}
               <div className="form-field-group">
-                <label>Nomor WhatsApp (Untuk Struk Digital)</label>
+
+                <label htmlFor="profile-phone">
+                  Nomor Telepon
+                </label>
+
                 <div className="input-with-icon">
-                  <Phone size={16} className="input-icon" />
+
+                  <Phone
+                    size={16}
+                    className="input-icon"
+                  />
+
                   <input
+                    id="profile-phone"
                     type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    required
+                    disabled={saving}
+                    value={
+                      formData.phone
+                    }
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        phone:
+                          e.target.value,
+                      })
+                    }
+                    placeholder="Contoh: 081234567890"
                   />
+
                 </div>
               </div>
 
-              {/* Field: Kota Domisili */}
               <div className="form-field-group">
-                <label>Kota / Kabupaten Domisili</label>
+
+                <label htmlFor="profile-role">
+                  Role Akun
+                </label>
+
                 <div className="input-with-icon">
-                  <MapPin size={16} className="input-icon" />
-                  <input
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Contoh: Kabupaten Bandung"
-                    required
+
+                  <ShieldCheck
+                    size={16}
+                    className="input-icon"
                   />
-                </div>
-              </div>
 
-              {/* Field 8: Provinsi Domisili (Balances 2-column grid) */}
-              <div className="form-field-group">
-                <label>Provinsi Domisili</label>
-                <div className="input-with-icon">
-                  <Building2 size={16} className="input-icon" />
                   <input
+                    id="profile-role"
                     type="text"
-                    value={formData.province}
-                    onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                    placeholder="Contoh: Jawa Barat"
-                    required
+                    value={profile.role}
+                    disabled
                   />
-                </div>
-              </div>
-            </div>
 
-            <div className="profile-preferences-section">
-              <h4 className="preferences-title">Preferensi Notifikasi</h4>
-              <div className="preference-item">
-                <div>
-                  <strong>Notifikasi Transaksi Timbangan</strong>
-                  <p>Kirimkan notifikasi segera setelah petugas Bank Sampah mengonfirmasi timbangan.</p>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={formData.notifTransaction}
-                  onChange={(e) => setFormData({ ...formData, notifTransaction: e.target.checked })}
-                  className="pref-checkbox"
-                />
               </div>
 
-              <div className="preference-item">
-                <div>
-                  <strong>Pembaruan Progres Kampanye</strong>
-                  <p>Dapatkan laporan berkala tentang pencapaian target lingkungan bersama.</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={formData.notifCampaign}
-                  onChange={(e) => setFormData({ ...formData, notifCampaign: e.target.checked })}
-                  className="pref-checkbox"
-                />
-              </div>
             </div>
 
             <div className="profile-form-actions">
-              <button type="submit" className="btn btn-light-green">
-                <Save size={16} /> Simpan Perubahan Profil
+
+              <button
+                type="submit"
+                className="btn btn-light-green"
+                disabled={saving}
+              >
+                <Save size={16} />
+
+                {saving
+                  ? 'Menyimpan...'
+                  : 'Simpan Perubahan Profil'}
               </button>
+
             </div>
+
           </form>
+
+          {/* ACCOUNT INFO */}
+          <div
+            className="dash-card"
+            style={{
+              marginTop: '1.5rem',
+            }}
+          >
+
+            <h3 className="dash-card-title">
+              Ringkasan Akun
+            </h3>
+
+            <div
+              style={{
+                display: 'grid',
+                gap: '1rem',
+                marginTop: '1rem',
+              }}
+            >
+
+              <div>
+                <Calendar
+                  size={16}
+                />
+
+                <strong>
+                  {' '}Bergabung
+                </strong>
+
+                <p>
+                  {formatDate(
+                    profile.created_at
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <Leaf size={16} />
+
+                <strong>
+                  {' '}Total Daur Ulang
+                </strong>
+
+                <p>
+                  {totalRecycled} kg
+                </p>
+              </div>
+
+              <div>
+                <Award size={16} />
+
+                <strong>
+                  {' '}Eco Score
+                </strong>
+
+                <p>{ecoScore}</p>
+              </div>
+
+              <div>
+                <Scale size={16} />
+
+                <strong>
+                  {' '}CO₂ Terhindar
+                </strong>
+
+                <p>
+                  {co2Avoided} kg
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
+
       </div>
+
     </div>
   );
 }

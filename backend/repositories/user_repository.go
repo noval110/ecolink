@@ -67,3 +67,32 @@ func (r *UserRepository) GetByID(
 
 	return user, nil
 }
+
+func (r *UserRepository) UpdateProfile(
+	ctx context.Context,
+	userID int64,
+	fullName string,
+	email string,
+	phone *string,
+) (*models.User, error) {
+	_, err := r.db.Exec(
+		ctx,
+		`
+		UPDATE users
+		SET
+			full_name = $2,
+			email = $3,
+			phone = $4
+		WHERE id = $1
+		`,
+		userID,
+		fullName,
+		email,
+		phone,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.GetByID(ctx, userID)
+}

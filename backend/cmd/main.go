@@ -62,6 +62,11 @@ func main() {
 		passportRepository,
 	)
 
+	gamificationRepository := repositories.NewGamificationRepository(db)
+	gamificationHandler := handlers.NewGamificationHandler(
+		gamificationRepository,
+	)
+
 	e := echo.New()
 
 	e.Logger.Info("PostgreSQL connected successfully")
@@ -96,6 +101,7 @@ func main() {
 		campaignHandler,
 		transactionHandler,
 		passportHandler,
+		gamificationHandler,
 		cfg.JWTSecret,
 	)
 
