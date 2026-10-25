@@ -1,265 +1,635 @@
-import React, { useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
 import {
   Trophy,
   Award,
   CheckCircle2,
   Clock,
-  Sparkles,
   Lock,
-  ArrowRight,
-  ShieldCheck,
-  Check,
-  Zap,
-  Target
+  Target,
 } from 'lucide-react';
-import { getActiveUser, USER_MISSIONS, USER_BADGES } from '../../data/mockUserData';
+
+import {
+  getMyMissions,
+  getMyBadges,
+} from '../../services/api';
+
+function formatDate(value) {
+  if (!value) return '-';
+
+  return new Intl.DateTimeFormat(
+    'id-ID',
+    {
+      dateStyle: 'medium',
+    }
+  ).format(new Date(value));
+}
 
 export default function UserMissionsPage() {
-  const [user, setUser] = useState(getActiveUser());
-  const [missions, setMissions] = useState(USER_MISSIONS);
-  const [badgeFilter, setBadgeFilter] = useState('all'); // 'all' | 'unlocked' | 'locked'
-  const [claimedNotice, setClaimedNotice] = useState(null);
+  const [missions, setMissions] =
+    useState([]);
 
-  const handleClaimReward = (missionId) => {
-    const targetMission = missions.find(m => m.id === missionId);
-    if (!targetMission) return;
+  const [badges, setBadges] =
+    useState([]);
 
-    setMissions((prev) =>
-      prev.map((m) => {
-        if (m.id === missionId) {
-          return { ...m, claimed: true };
-        }
-        return m;
-      })
+  const [badgeFilter, setBadgeFilter] =
+    useState('all');
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState('');
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const [
+          missionResult,
+          badgeResult,
+        ] = await Promise.all([
+          getMyMissions(),
+          getMyBadges(),
+        ]);
+
+        setMissions(
+          Array.isArray(
+            missionResult.data
+          )
+            ? missionResult.data
+            : []
+        );
+
+        setBadges(
+          Array.isArray(
+            badgeResult.data
+          )
+            ? badgeResult.data
+            : []
+        );
+      } catch (err) {
+        setError(
+          err.message ||
+            'Gagal memuat misi dan lencana.'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const unlockedBadges =
+    badges.filter(
+      (badge) => badge.is_unlocked
     );
 
-    const activeUser = getActiveUser();
-    const newPoints = activeUser.points + targetMission.rewardPoints;
-    localStorage.setItem(`ecolink_points_${activeUser.id}`, newPoints.toString());
-    setUser({ ...activeUser, points: newPoints });
-    window.dispatchEvent(new Event('ecolink_profile_changed'));
+  const filteredBadges =
+    useMemo(() => {
+      if (badgeFilter === 'unlocked') {
+        return badges.filter(
+          (badge) =>
+            badge.is_unlocked
+        );
+      }
 
-    setClaimedNotice(`Selamat! Kamu berhasil mengklaim +${targetMission.rewardPoints} poin & +${targetMission.rewardXp} XP! Poin langsung ditambahkan ke saldo.`);
-    setTimeout(() => setClaimedNotice(null), 4000);
-  };
+      if (badgeFilter === 'locked') {
+        return badges.filter(
+          (badge) =>
+            !badge.is_unlocked
+        );
+      }
 
-  const filteredBadges = USER_BADGES.filter((b) => {
-    if (badgeFilter === 'unlocked') return b.isUnlocked;
-    if (badgeFilter === 'locked') return !b.isUnlocked;
-    return true;
-  });
+      return badges;
+    }, [
+      badges,
+      badgeFilter,
+    ]);
 
-  const levelProgress = Math.round((user.currentXp / user.nextLevelXp) * 100);
+  if (loading) {
+    return (
+      <div className="user-missions-page">
+        <h3>
+          Memuat misi dan lencana...
+        </h3>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="user-missions-page">
+        <h3>
+          Misi tidak dapat dimuat
+        </h3>
+
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="user-missions-page">
-      {/* Header */}
+
+      {/* HEADER */}
       <div className="page-header-row">
+
         <div>
+
           <div className="inline-badge-tiny">
-            <Trophy size={14} className="text-gold" />
-            <span>Gamifikasi & Prestasi Hijau</span>
+
+            <Trophy
+              size={14}
+              className="text-gold"
+            />
+
+            <span>
+              Gamifikasi EcoLink
+            </span>
+
           </div>
-          <h1 className="page-title">Misi & Lencana Pencapaian</h1>
+
+          <h1 className="page-title">
+            Misi & Lencana
+          </h1>
+
           <p className="page-sub">
-            Selesaikan misi daur ulang mingguan, kumpulkan XP untuk menaikkan level paspor, dan buka lencana kehormatan pelopor lingkungan.
+            Progress misi dihitung
+            otomatis dari transaksi dan
+            aktivitas kampanye yang telah
+            tercatat di EcoLink.
           </p>
+
         </div>
+
       </div>
 
-      {/* Reward Claim Banner */}
-      {claimedNotice && (
-        <div className="claim-reward-toast fade-in">
-          <Sparkles size={18} className="text-gold shrink-0" />
-          <span>{claimedNotice}</span>
-        </div>
-      )}
+      {/* MISSION SUMMARY */}
+      <div
+        className="level-hero-card"
+        style={{
+          marginBottom: '2.5rem',
+        }}
+      >
 
-      {/* Level Summary Header Card */}
-      <div className="level-hero-card">
         <div className="level-hero-left">
+
           <div className="level-trophy-circle">
-            <Trophy size={36} className="text-gold" />
+            <Trophy
+              size={36}
+              className="text-gold"
+            />
           </div>
+
           <div>
-            <span className="level-pre-label">Gelar Saat Ini</span>
-            <h3 className="level-hero-title">{user.levelTitle}</h3>
-            <p className="level-hero-sub">Tingkat {user.level} dari 10 Tingkat Kehormatan</p>
+
+            <span className="level-pre-label">
+              Progress Misi
+            </span>
+
+            <h3 className="level-hero-title">
+              {
+                missions.filter(
+                  (mission) =>
+                    mission.status ===
+                    'completed'
+                ).length
+              }{' '}
+              / {missions.length} Selesai
+            </h3>
+
+            <p className="level-hero-sub">
+              Progress diperbarui dari
+              aktivitas akun terverifikasi.
+            </p>
+
           </div>
+
         </div>
 
         <div className="level-hero-progress">
-          <div className="xp-row">
-            <span><strong>{user.currentXp}</strong> / {user.nextLevelXp} XP</span>
-            <span className="text-emerald font-semibold">{levelProgress}%</span>
-          </div>
-          <div className="progress-track-bg">
-            <div className="progress-fill-bar" style={{ width: `${levelProgress}%` }} />
-          </div>
+
           <span className="level-hint-sub">
-            Butuh <strong>{user.nextLevelXp - user.currentXp} XP</strong> lagi untuk membuka Tingkat {user.level + 1}.
+            Lencana terbuka:{' '}
+            <strong>
+              {unlockedBadges.length}
+            </strong>{' '}
+            dari{' '}
+            <strong>
+              {badges.length}
+            </strong>
           </span>
+
         </div>
+
       </div>
 
-      {/* Section 1: Weekly Missions */}
-      <div className="dash-card" style={{ marginBottom: '2.5rem' }}>
+      {/* MISSIONS */}
+      <div
+        className="dash-card"
+        style={{
+          marginBottom: '2.5rem',
+        }}
+      >
+
         <div className="dash-card-header">
+
           <div>
-            <h3 className="dash-card-title">Misi Aksi Nyata Mingguan</h3>
-            <span className="dash-card-sub">Diperbarui setiap hari Senin pukul 00:00 WIB</span>
+            <h3 className="dash-card-title">
+              Misi Aktif
+            </h3>
+
+            <span className="dash-card-sub">
+              Progress diperbarui otomatis
+              dari aktivitas akun
+            </span>
           </div>
+
           <span className="mission-counter-pill">
-            {missions.filter(m => m.isCompleted).length} / {missions.length} Selesai
+            {
+              missions.filter(
+                (m) =>
+                  m.status ===
+                  'completed'
+              ).length
+            }{' '}
+            / {missions.length} Selesai
           </span>
+
         </div>
 
         <div className="missions-grid-display">
+
           {missions.map((mission) => {
-            const isFinished = mission.isCompleted;
-            const isClaimed = mission.claimed;
-            const pct = Math.min(100, Math.round((mission.progress / mission.target) * 100));
+            const isFinished =
+              mission.status ===
+              'completed';
 
-            return (
-              <div key={mission.id} className={`mission-card-full ${isFinished ? 'is-complete' : ''}`}>
-                <div className="mission-card-top">
-                  <div className="mission-icon-box">
-                    {isFinished ? (
-                      <CheckCircle2 size={24} className="text-emerald" />
-                    ) : (
-                      <Target size={24} className="text-muted" />
-                    )}
-                  </div>
-                  <div className="mission-text-box">
-                    <h4 className="mission-title">{mission.title}</h4>
-                    <p className="mission-desc">{mission.desc}</p>
-                  </div>
-                </div>
-
-                <div className="mission-progress-block">
-                  <div className="mission-progress-labels">
-                    <span>Progres: <strong>{mission.progress} / {mission.target} {mission.unit}</strong></span>
-                    <span className="text-emerald font-semibold">{pct}%</span>
-                  </div>
-                  <div className="progress-track-bg">
-                    <div className="progress-fill-bar" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-
-                <div className="mission-card-bottom">
-                  <div className="mission-reward-pills">
-                    <span className="pill-pts">+{mission.rewardPoints} Poin</span>
-                    <span className="pill-xp">+{mission.rewardXp} XP</span>
-                  </div>
-
-                  {isFinished ? (
-                    isClaimed ? (
-                      <span className="badge-claimed">
-                        <Check size={14} /> Hadiah Diklaim
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleClaimReward(mission.id)}
-                        className="btn btn-light-green btn-xs"
-                      >
-                        <Sparkles size={13} /> Klaim Hadiah
-                      </button>
-                    )
-                  ) : (
-                    <span className="badge-in-progress">
-                      <Clock size={13} /> Sedang Berjalan
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Section 2: Badges Collection Showcase */}
-      <div className="dash-card">
-        <div className="dash-card-header">
-          <div>
-            <h3 className="dash-card-title">Koleksi Lencana Penghargaan ({USER_BADGES.filter(b => b.isUnlocked).length} / {USER_BADGES.length} Terbuka)</h3>
-            <span className="dash-card-sub">Lencana kehormatan yang tersemat resmi di Eco Passport pribadimu</span>
-          </div>
-
-          <div className="badge-filter-buttons">
-            <button
-              type="button"
-              onClick={() => setBadgeFilter('all')}
-              className={`filter-btn-pill ${badgeFilter === 'all' ? 'active' : ''}`}
-            >
-              Semua ({USER_BADGES.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setBadgeFilter('unlocked')}
-              className={`filter-btn-pill ${badgeFilter === 'unlocked' ? 'active' : ''}`}
-            >
-              Terbuka ({USER_BADGES.filter(b => b.isUnlocked).length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setBadgeFilter('locked')}
-              className={`filter-btn-pill ${badgeFilter === 'locked' ? 'active' : ''}`}
-            >
-              Terkunci ({USER_BADGES.filter(b => !b.isUnlocked).length})
-            </button>
-          </div>
-        </div>
-
-        <div className="badges-showcase-grid">
-          {filteredBadges.map((badge) => {
-            const isUnlocked = badge.isUnlocked;
+            const percentage =
+              Math.min(
+                100,
+                Number(
+                  mission.percentage ||
+                    0
+                )
+              );
 
             return (
               <div
-                key={badge.id}
-                className={`badge-showcase-card ${isUnlocked ? 'unlocked' : 'locked'}`}
-                style={isUnlocked ? { borderColor: badge.color } : {}}
+                key={mission.id}
+                className={`mission-card-full ${
+                  isFinished
+                    ? 'is-complete'
+                    : ''
+                }`}
               >
-                <div
-                  className="badge-icon-frame"
-                  style={{
-                    backgroundColor: isUnlocked ? badge.bg : 'rgba(255,255,255,0.03)',
-                    color: isUnlocked ? badge.color : 'rgba(255,255,255,0.3)',
-                    border: isUnlocked ? `1px solid ${badge.color}` : '1px solid rgba(255,255,255,0.08)'
-                  }}
-                >
-                  {isUnlocked ? <Award size={36} /> : <Lock size={32} />}
-                </div>
 
-                <div className="badge-card-info">
-                  <div className="badge-tag-row">
-                    <span className="badge-category">{badge.category}</span>
-                    <span className="badge-rarity-pill" style={isUnlocked ? { color: badge.color } : {}}>
-                      {badge.rarity}
-                    </span>
-                  </div>
+                <div className="mission-card-top">
 
-                  <h4 className="badge-title">{badge.title}</h4>
-                  <p className="badge-desc">{badge.desc}</p>
+                  <div className="mission-icon-box">
 
-                  <div className="badge-unlock-status">
-                    {isUnlocked ? (
-                      <span className="status-unlocked-text">
-                        <CheckCircle2 size={13} className="text-emerald" /> Terbuka pada {badge.unlockedAt}
-                      </span>
+                    {isFinished ? (
+                      <CheckCircle2
+                        size={24}
+                        className="text-emerald"
+                      />
                     ) : (
-                      <span className="status-locked-text">
-                        <Lock size={13} /> Selesaikan target untuk membuka
-                      </span>
+                      <Target
+                        size={24}
+                        className="text-muted"
+                      />
                     )}
+
                   </div>
+
+                  <div className="mission-text-box">
+
+                    <h4 className="mission-title">
+                      {mission.title}
+                    </h4>
+
+                    <p className="mission-desc">
+                      {mission.description}
+                    </p>
+
+                  </div>
+
                 </div>
+
+                <div className="mission-progress-block">
+
+                  <div className="mission-progress-labels">
+
+                    <span>
+                      Progres:{' '}
+                      <strong>
+                        {mission.progress}
+                        {' / '}
+                        {
+                          mission.target_value
+                        }
+                      </strong>
+                    </span>
+
+                    <span className="text-emerald font-semibold">
+                      {percentage.toFixed(
+                        percentage % 1 === 0
+                          ? 0
+                          : 2
+                      )}
+                      %
+                    </span>
+
+                  </div>
+
+                  <div className="progress-track-bg">
+
+                    <div
+                      className="progress-fill-bar"
+                      style={{
+                        width:
+                          `${percentage}%`,
+                      }}
+                    />
+
+                  </div>
+
+                </div>
+
+                <div className="mission-card-bottom">
+
+                  <div className="mission-reward-pills">
+
+                    <span className="pill-xp">
+                      +
+                      {
+                        mission.xp_reward
+                      }{' '}
+                      XP
+                    </span>
+
+                  </div>
+
+                  {isFinished ? (
+                    <span className="badge-claimed">
+                      <CheckCircle2
+                        size={14}
+                      />
+                      Selesai
+                    </span>
+                  ) : (
+                    <span className="badge-in-progress">
+                      <Clock size={13} />
+                      Sedang Berjalan
+                    </span>
+                  )}
+
+                </div>
+
               </div>
             );
           })}
+
         </div>
+
       </div>
+
+      {/* BADGES */}
+      <div className="dash-card">
+
+        <div className="dash-card-header">
+
+          <div>
+
+            <h3 className="dash-card-title">
+              Koleksi Lencana (
+              {unlockedBadges.length} /{' '}
+              {badges.length} Terbuka)
+            </h3>
+
+            <span className="dash-card-sub">
+              Lencana terbuka otomatis
+              setelah target tercapai
+            </span>
+
+          </div>
+
+          <div className="badge-filter-buttons">
+
+            <button
+              type="button"
+              onClick={() =>
+                setBadgeFilter('all')
+              }
+              className={`filter-btn-pill ${
+                badgeFilter === 'all'
+                  ? 'active'
+                  : ''
+              }`}
+            >
+              Semua ({badges.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setBadgeFilter(
+                  'unlocked'
+                )
+              }
+              className={`filter-btn-pill ${
+                badgeFilter ===
+                'unlocked'
+                  ? 'active'
+                  : ''
+              }`}
+            >
+              Terbuka (
+              {unlockedBadges.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setBadgeFilter(
+                  'locked'
+                )
+              }
+              className={`filter-btn-pill ${
+                badgeFilter ===
+                'locked'
+                  ? 'active'
+                  : ''
+              }`}
+            >
+              Terkunci (
+              {badges.length -
+                unlockedBadges.length}
+              )
+            </button>
+
+          </div>
+
+        </div>
+
+        <div className="badges-showcase-grid">
+
+          {filteredBadges.map(
+            (badge) => {
+
+              const unlocked =
+                badge.is_unlocked;
+
+              const percentage =
+                Math.min(
+                  100,
+                  Number(
+                    badge.percentage ||
+                      0
+                  )
+                );
+
+              return (
+                <div
+                  key={badge.id}
+                  className={`badge-showcase-card ${
+                    unlocked
+                      ? 'unlocked'
+                      : 'locked'
+                  }`}
+                >
+
+                  <div className="badge-icon-frame">
+
+                    {unlocked ? (
+                      <Award
+                        size={36}
+                        className="text-emerald"
+                      />
+                    ) : (
+                      <Lock size={32} />
+                    )}
+
+                  </div>
+
+                  <div className="badge-card-info">
+
+                    <div className="badge-tag-row">
+
+                      <span className="badge-category">
+                        {
+                          badge.criteria_type
+                        }
+                      </span>
+
+                      <span className="badge-rarity-pill">
+                        {unlocked
+                          ? 'TERBUKA'
+                          : `${percentage.toFixed(
+                              0
+                            )}%`}
+                      </span>
+
+                    </div>
+
+                    <h4 className="badge-title">
+                      {badge.name}
+                    </h4>
+
+                    <p className="badge-desc">
+                      {badge.description}
+                    </p>
+
+                    <div
+                      className="mission-progress-block"
+                      style={{
+                        marginTop:
+                          '0.75rem',
+                      }}
+                    >
+
+                      <div className="mission-progress-labels">
+
+                        <span>
+                          {badge.progress}{' '}
+                          / {badge.target}
+                        </span>
+
+                        <span>
+                          {percentage.toFixed(
+                            percentage %
+                              1 ===
+                              0
+                              ? 0
+                              : 1
+                          )}
+                          %
+                        </span>
+
+                      </div>
+
+                      <div className="progress-track-bg">
+
+                        <div
+                          className="progress-fill-bar"
+                          style={{
+                            width:
+                              `${percentage}%`,
+                          }}
+                        />
+
+                      </div>
+
+                    </div>
+
+                    <div className="badge-unlock-status">
+
+                      {unlocked ? (
+                        <span className="status-unlocked-text">
+
+                          <CheckCircle2
+                            size={13}
+                            className="text-emerald"
+                          />
+
+                          Terbuka pada{' '}
+                          {formatDate(
+                            badge.earned_at
+                          )}
+
+                        </span>
+                      ) : (
+                        <span className="status-locked-text">
+
+                          <Lock size={13} />
+
+                          Selesaikan target
+                          untuk membuka
+
+                        </span>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                </div>
+              );
+            }
+          )}
+
+        </div>
+
+      </div>
+
     </div>
   );
 }

@@ -1,80 +1,256 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Leaf, ArrowRight, Mail, Lock, User, Building2, Truck } from 'lucide-react';
+import {
+  Link,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
+
+import {
+  Leaf,
+  ArrowRight,
+  Mail,
+  Lock,
+  User,
+  Building2,
+  Truck,
+} from 'lucide-react';
+
+import {
+  loginUser,
+  saveAuth,
+} from '../../services/api';
+import { getHomeForRole } from '../../components/ProtectedRoute';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [role, setRole] = useState('user'); // user, bank, org
+  const [searchParams] = useSearchParams();
 
-  const handleLogin = (e) => {
+  const [role, setRole] = useState('user');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate login for now
-    navigate('/dashboard');
+
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await loginUser({
+        email,
+        password,
+      });
+
+      const user = result.data.user;
+
+      const roleMap = {
+        user: 'user',
+        org: 'organization',
+        bank: 'waste_bank',
+      };
+
+      if (user.role !== roleMap[role]) {
+        throw new Error(
+          'Jenis akun yang dipilih tidak sesuai dengan akun ini.'
+        );
+      }
+
+      saveAuth(result.data);
+
+      if (user.role === 'user') {
+        const redirect = searchParams.get('redirect');
+        const destination = /^\/campaigns\/[1-9]\d*$/.test(redirect || '') ? redirect : getHomeForRole(user.role);
+        navigate(destination, { replace: true });
+        return;
+      }
+
+      navigate(getHomeForRole(user.role), { replace: true });
+    } catch (err) {
+      setError(
+        err.message || 'Login gagal.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="auth-page">
       <div className="auth-container">
+
         <Link to="/" className="auth-logo">
-          <Leaf className="logo-icon" size={28} />
+          <Leaf
+            className="logo-icon"
+            size={28}
+          />
           <span>EcoLink</span>
         </Link>
-        
+
         <div className="auth-card glass-card">
+
           <div className="auth-header">
             <h2>Selamat Datang Kembali</h2>
-            <p>Lanjutkan perjalanan dampak lingkunganmu hari ini.</p>
+            <p>
+              Lanjutkan perjalanan dampak
+              lingkunganmu hari ini.
+            </p>
           </div>
 
           <div className="role-selector">
-            <button 
-              className={`role-btn ${role === 'user' ? 'active' : ''}`}
-              onClick={() => setRole('user')}
+
+            <button
+              type="button"
+              className={`role-btn ${
+                role === 'user'
+                  ? 'active'
+                  : ''
+              }`}
+              onClick={() =>
+                setRole('user')
+              }
             >
-              <User size={18} /> Individu
+              <User size={18} />
+              Individu
             </button>
-            <button 
-              className={`role-btn ${role === 'org' ? 'active' : ''}`}
-              onClick={() => setRole('org')}
+
+            <button
+              type="button"
+              className={`role-btn ${
+                role === 'org'
+                  ? 'active'
+                  : ''
+              }`}
+              onClick={() =>
+                setRole('org')
+              }
             >
-              <Building2 size={18} /> Organisasi
+              <Building2 size={18} />
+              Organisasi
             </button>
-            <button 
-              className={`role-btn ${role === 'bank' ? 'active' : ''}`}
-              onClick={() => setRole('bank')}
+
+            <button
+              type="button"
+              className={`role-btn ${
+                role === 'bank'
+                  ? 'active'
+                  : ''
+              }`}
+              onClick={() =>
+                setRole('bank')
+              }
             >
-              <Truck size={18} /> Bank Sampah
+              <Truck size={18} />
+              Bank Sampah
             </button>
+
           </div>
 
-          <form className="auth-form" onSubmit={handleLogin}>
-            <div className="form-group">
-              <label>Alamat Email</label>
-              <div className="input-with-icon">
-                <Mail size={18} className="input-icon" />
-                <input type="email" placeholder="nama@email.com" required />
-              </div>
+          {error && (
+            <div
+              style={{
+                marginBottom: '1rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                background:
+                  'rgba(239, 68, 68, 0.1)',
+                color: '#ef4444',
+              }}
+            >
+              {error}
             </div>
-            
+          )}
+
+          <form
+            className="auth-form"
+            onSubmit={handleLogin}
+          >
+
             <div className="form-group">
-              <div className="label-row">
-                <label>Kata Sandi</label>
-                <a href="#" className="forgot-password">Lupa kata sandi?</a>
-              </div>
+              <label>
+                Alamat Email
+              </label>
+
               <div className="input-with-icon">
-                <Lock size={18} className="input-icon" />
-                <input type="password" placeholder="••••••••" required />
+                <Mail
+                  size={18}
+                  className="input-icon"
+                />
+
+                <input
+                  type="email"
+                  placeholder="nama@email.com"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(
+                      e.target.value
+                    )
+                  }
+                  required
+                />
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary w-100 auth-submit">
-              Masuk Sekarang <ArrowRight size={18} />
+            <div className="form-group">
+
+              <div className="label-row">
+                <label>
+                  Kata Sandi
+                </label>
+              </div>
+
+              <div className="input-with-icon">
+
+                <Lock
+                  size={18}
+                  className="input-icon"
+                />
+
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(
+                      e.target.value
+                    )
+                  }
+                  required
+                />
+
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary w-100 auth-submit"
+              disabled={loading}
+            >
+              {loading
+                ? 'Memproses...'
+                : 'Masuk Sekarang'}
+
+              {!loading && (
+                <ArrowRight size={18} />
+              )}
             </button>
+
           </form>
 
           <div className="auth-footer">
-            <p>Belum punya akun? <Link to="/register" className="auth-link">Daftar di sini</Link></p>
+            <p>
+              Belum punya akun?{' '}
+              <Link
+                to="/register"
+                className="auth-link"
+              >
+                Daftar di sini
+              </Link>
+            </p>
           </div>
+
         </div>
       </div>
     </div>

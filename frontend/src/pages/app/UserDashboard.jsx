@@ -4,7 +4,6 @@ import {
   TrendingUp,
   Award,
   Leaf,
-  Droplets,
   QrCode,
   ArrowRight,
   ShieldCheck,
@@ -13,31 +12,153 @@ import {
   Sparkles,
   Target,
   Trophy,
-  ExternalLink,
   ChevronRight,
   ReceiptText,
   MapPin,
-  Calendar,
   X,
   Gift
 } from 'lucide-react';
-import { getActiveUser, USER_TRANSACTIONS, USER_CAMPAIGNS, USER_MISSIONS } from '../../data/mockUserData';
+import {
+  getDashboard,
+  getMyCampaigns,
+  getMyTransactions,
+  getTransactionById,
+  getStoredUser,
+  getMyMissions,
+  getPassport,
+} from '../../services/api';
 
 export default function UserDashboard() {
-  const [user, setUser] = useState(getActiveUser());
+  const [user, setUser] = useState(() => getStoredUser() || {});
+  const [missions, setMissions] = useState([]);
+  const [missionsLoading, setMissionsLoading] = useState(true);
+  const [missionsError, setMissionsError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedTx, setSelectedTx] = useState(null);
+  const [activeCampaign, setActiveCampaign] = useState(null);
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    const loadDashboard = async () => {
+      try {
+        const [dashboardResult, campaignResult, transactionResult, passportResult] = await Promise.all([
+          getDashboard(),
+          getMyCampaigns(),
+          getMyTransactions(),
+          getPassport(),
+        ]);
+        const data = dashboardResult.data;
+
+        if (!active) return;
+        if (!data?.user || !data.stats || !data.impact_summary || !passportResult.data) {
+          throw new Error('Data dasbor tidak tersedia.');
+        }
+
+        setUser((current) => ({
+          ...current,
+          full_name: data.user.full_name,
+          role: data.user.role,
+          passportId: passportResult.data.passport_id,
+          totalRecycledKg: data.stats.total_recycled,
+          co2SavedKg: Number(data.impact_summary.co2_avoided.toFixed(2)),
+          ecoScore: data.stats.eco_score,
+          activeCampaignsCount: data.stats.campaign_joined,
+          verifiedActions: data.stats.verified_actions,
+        }));
+
+        const campaigns = Array.isArray(campaignResult.data) ? campaignResult.data : [];
+        setActiveCampaign(campaigns.length > 0 ? campaigns[0] : null);
+
+        const transactions = Array.isArray(transactionResult.data) ? transactionResult.data : [];
+        setRecentTransactions(transactions.slice(0, 4));
+      } catch (error) {
+        if (active) {
+          console.error('Failed to load dashboard:', error);
+          setError(error.message || 'Gagal memuat dasbor.');
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadDashboard();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadMissions = async () => {
+      try {
+        const result = await getMyMissions();
+        if (active) setMissions(Array.isArray(result.data) ? result.data : []);
+      } catch (err) {
+        if (active) {
+          console.error('Failed to load missions:', err);
+          setMissions([]);
+          setMissionsError(err.message || 'Gagal memuat misi.');
+        }
+      } finally {
+        if (active) setMissionsLoading(false);
+      }
+    };
+    loadMissions();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handleProfileChange = () => {
-      setUser(getActiveUser());
+      setUser((current) => ({
+        ...current,
+        ...(getStoredUser() || {}),
+      }));
     };
     window.addEventListener('ecolink_profile_changed', handleProfileChange);
     return () => window.removeEventListener('ecolink_profile_changed', handleProfileChange);
   }, []);
 
-  const levelProgress = Math.round((user.currentXp / user.nextLevelXp) * 100);
-  const activeCampaign = USER_CAMPAIGNS[0];
-  const recentTransactions = USER_TRANSACTIONS.slice(0, 4);
+  const handleOpenTransaction = async (id) => {
+    if (detailLoading) return;
+
+    setDetailLoading(true);
+    setDetailError('');
+
+    try {
+      const result = await getTransactionById(id);
+      setSelectedTx(result.data);
+    } catch (error) {
+      console.error('Failed to load transaction detail:', error);
+      setDetailError(error.message || 'Gagal memuat detail transaksi.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="user-dashboard-page" role="status">
+        <h3>Memuat dasbor...</h3>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="user-dashboard-page">
+        <h3>Dasbor tidak dapat dimuat</h3>
+        <p role="alert">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="user-dashboard-page">
@@ -46,10 +167,10 @@ export default function UserDashboard() {
         <div className="welcome-banner-content">
           <div className="welcome-badge">
             <Sparkles size={14} className="text-emerald" />
-            <span>Portofolio Hijau Terverifikasi • {user.categoryLabel}</span>
+            <span>Portofolio Hijau Terverifikasi • {user.role || 'Pengguna'}</span>
           </div>
           <h1 className="welcome-title">
-            Halo, {user.name}! 👋
+            Halo, {user.full_name || 'Pengguna'}! 👋
           </h1>
           <p className="welcome-desc">
             Kamu telah mendaur ulang <strong>{user.totalRecycledKg} kg</strong> sampah fisik dan menyelamatkan <strong>{user.co2SavedKg} kg CO₂e</strong> emisi karbon. Setiap aksimu tervalidasi timbangan resmi Bank Sampah mitra!
@@ -64,9 +185,9 @@ export default function UserDashboard() {
                 <ShieldCheck size={12} /> Terverifikasi
               </span>
             </div>
-            <strong className="chip-code">{user.passportId}</strong>
+            <strong className="chip-code">{user.passportId || 'ID paspor tidak tersedia'}</strong>
             <div className="chip-level-badge">
-              <span>Level {user.level} • {user.levelTitle.split('(')[0].trim()}</span>
+              <span>Level & XP belum tersedia</span>
             </div>
             <Link to="/app/passport" className="btn btn-light-green btn-sm w-100 justify-center" style={{ marginTop: '0.65rem' }}>
               <QrCode size={14} />
@@ -100,7 +221,7 @@ export default function UserDashboard() {
             <div className="metric-value">
               {user.co2SavedKg} <span className="metric-unit">kg CO₂e</span>
             </div>
-            <span className="metric-subtext">Setara 582 km motor bebas emisi</span>
+            <span className="metric-subtext">Estimasi dari sampah terverifikasi</span>
           </div>
         </div>
 
@@ -109,26 +230,26 @@ export default function UserDashboard() {
             <Award size={22} className="text-gold" />
           </div>
           <div className="dash-metric-info">
-            <span className="metric-label">Poin EcoLink Terkumpul</span>
+            <span className="metric-label">Eco Score</span>
             <div className="metric-value text-gold">
-              {user.points.toLocaleString()} <span className="metric-unit">poin</span>
+              {(user.ecoScore ?? 0).toLocaleString()}
             </div>
-            <Link to="/app/rewards" className="metric-subtext link-sub">
-              Tukar ke Pulsa / Hadiah →
-            </Link>
+            <span className="metric-subtext">
+              Berdasarkan transaksi terverifikasi
+            </span>
           </div>
         </div>
 
         <div className="dash-metric-card">
           <div className="dash-metric-icon bg-blue-dark-subtle">
-            <Droplets size={22} className="text-blue" />
+            <CheckCircle2 size={22} className="text-blue" />
           </div>
           <div className="dash-metric-info">
-            <span className="metric-label">Air Tanah Terlindungi</span>
+            <span className="metric-label">Setoran Terverifikasi</span>
             <div className="metric-value">
-              {user.waterSavedLiter.toLocaleString()} <span className="metric-unit">Liter</span>
+              {(user.verifiedActions ?? 0).toLocaleString('id-ID')} <span className="metric-unit">transaksi</span>
             </div>
-            <span className="metric-subtext">Dari daur ulang minyak jelantah</span>
+            <span className="metric-subtext">Diverifikasi oleh Bank Sampah</span>
           </div>
         </div>
       </div>
@@ -137,155 +258,263 @@ export default function UserDashboard() {
       <div className="dashboard-content-grid">
         
         {/* Left Column (Campaign Progress & Recent Transactions) */}
-        <div className="dashboard-left-col">
+        <div className="dashboard-left-col" style={{ minWidth: 0 }}>
           
           {/* Active Campaign Box */}
           <div className="dash-card">
-            <div className="dash-card-header">
-              <div>
-                <span className="inline-badge-tiny">
-                  <Target size={14} className="text-emerald" /> KAMPANYE UTAMA YANG DIIKUTI
-                </span>
-                <h3 className="dash-card-title">{activeCampaign.title}</h3>
-                <span className="dash-card-sub">Diselenggarakan oleh: {activeCampaign.organizer}</span>
-              </div>
-              <Link to={`/campaigns/${activeCampaign.id}`} className="btn btn-outline btn-sm">
-                <span>Detail</span>
-                <ChevronRight size={14} />
-              </Link>
-            </div>
+            {activeCampaign ? (
+              <>
+                <div className="dash-card-header">
+                  <div>
+                    <span className="inline-badge-tiny">
+                      <Target
+                        size={14}
+                        className="text-emerald"
+                      />
+                      KAMPANYE UTAMA YANG DIIKUTI
+                    </span>
 
-            <div className="active-campaign-progress-box">
-              <div className="xp-text-flex">
-                <span>Target Bersama: <strong>{activeCampaign.totalCollectedKg.toLocaleString()} / {activeCampaign.totalTargetKg.toLocaleString()} kg</strong></span>
-                <strong className="text-emerald">{Math.round((activeCampaign.totalCollectedKg / activeCampaign.totalTargetKg) * 100)}%</strong>
-              </div>
-              <div className="xp-track">
-                <div
-                  className="xp-fill"
-                  style={{ width: `${Math.round((activeCampaign.totalCollectedKg / activeCampaign.totalTargetKg) * 100)}%` }}
-                />
-              </div>
-            </div>
+                    <h3 className="dash-card-title">
+                      {activeCampaign.title}
+                    </h3>
 
-            <div className="user-contribution-banner">
-              <div className="contribution-item">
-                <span className="c-label">Kontribusimu</span>
-                <strong className="c-val">{activeCampaign.userContributionKg} kg</strong>
-                <span className="c-sub">Timbangan fisik sah</span>
+                    <span className="dash-card-sub">
+                      Diselenggarakan oleh:{' '}
+                      {activeCampaign.organization}
+                    </span>
+                  </div>
+
+                  <Link
+                    to={`/campaigns/${activeCampaign.id}`}
+                    className="btn btn-outline btn-sm"
+                  >
+                    <span>Detail</span>
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
+
+                <div className="active-campaign-progress-box">
+                  <div className="xp-text-flex">
+                    <span>
+                      Target Bersama:{' '}
+                      <strong>
+                        {activeCampaign.current_weight}
+                        {' / '}
+                        {activeCampaign.target_weight} kg
+                      </strong>
+                    </span>
+
+                    <strong className="text-emerald">
+                      {Number(
+                        activeCampaign.progress_percentage
+                      ).toFixed(2)}
+                      %
+                    </strong>
+                  </div>
+
+                  <div className="xp-track">
+                    <div
+                      className="xp-fill"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Number(
+                            activeCampaign.progress_percentage
+                          )
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="user-contribution-banner">
+
+                  <div className="contribution-item">
+                    <span className="c-label">
+                      Kontribusimu
+                    </span>
+
+                    <strong className="c-val">
+                      {activeCampaign.user_contribution}
+                      {' kg'}
+                    </strong>
+
+                    <span className="c-sub">
+                      Transaksi terverifikasi
+                    </span>
+                  </div>
+
+                  <div className="contribution-item">
+                    <span className="c-label">
+                      Eco Score
+                    </span>
+
+                    <strong className="c-val text-emerald">
+                      {Math.round(
+                        Number(
+                          activeCampaign.user_contribution || 0
+                        ) * 10
+                      )}
+                    </strong>
+
+                    <span className="c-sub">
+                      Berdasarkan kontribusi
+                    </span>
+                  </div>
+
+                  <div className="contribution-item">
+                    <span className="c-label">
+                      Mitra Penampung
+                    </span>
+
+                    <strong className="c-val">
+                      {activeCampaign.partner_waste_banks
+                        ?.map((bank) => bank.name)
+                        .join(', ') || '-'}
+                    </strong>
+
+                    <span className="c-sub">
+                      Bank Sampah Resmi
+                    </span>
+                  </div>
+
+                </div>
+              </>
+            ) : (
+              <div className="discovery-empty-state">
+                <Target size={28} />
+                <h4>Belum Mengikuti Kampanye</h4>
+                <p>
+                  Ikuti kampanye untuk mulai
+                  mencatat kontribusimu.
+                </p>
+
+                <Link
+                  to="/campaigns"
+                  className="btn btn-light-green btn-sm"
+                >
+                  Lihat Kampanye
+                </Link>
               </div>
-              <div className="contribution-item">
-                <span className="c-label">Peringkat Kontributor</span>
-                <strong className="c-val text-emerald">#3 Teratas</strong>
-                <span className="c-sub">Komunitas & Kampus</span>
-              </div>
-              <div className="contribution-item">
-                <span className="c-label">Mitra Penampung</span>
-                <strong className="c-val">Berseri</strong>
-                <span className="c-sub">Bank Sampah Resmi</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Recent Verified Transactions */}
+          {/* Recent Transactions */}
           <div className="dash-card">
             <div className="dash-card-header">
               <div>
-                <h3 className="dash-card-title">Riwayat Transaksi Penyetoran Terverifikasi</h3>
-                <span className="dash-card-sub">Semua transaksi dicatat oleh petugas resmi bank sampah</span>
+                <h3 className="dash-card-title">Transaksi Penyetoran Terbaru</h3>
+                <span className="dash-card-sub">Riwayat penyetoran sampah yang tercatat di akunmu</span>
               </div>
               <Link to="/app/transactions" className="btn btn-outline btn-sm">
-                <span>Semua Transaksi ({USER_TRANSACTIONS.length})</span>
+                <span>Semua Transaksi ({recentTransactions.length})</span>
                 <ArrowRight size={14} />
               </Link>
             </div>
 
             <div className="recent-tx-stack">
+              {recentTransactions.length === 0 && (
+                <div className="discovery-empty-state">
+                  <ReceiptText size={28} />
+                  <h4>Belum Ada Transaksi</h4>
+                  <p>Riwayat penyetoranmu akan tampil di sini.</p>
+                </div>
+              )}
               {recentTransactions.map((tx) => (
                 <div
                   key={tx.id}
                   className="tx-item-card"
-                  onClick={() => setSelectedTx(tx)}
+                  onClick={() => handleOpenTransaction(tx.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleOpenTransaction(tx.id);
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
+                  aria-disabled={detailLoading}
                 >
                   <div className="tx-icon-box">
                     <ReceiptText size={18} />
                   </div>
                   <div className="tx-info-col">
                     <div className="tx-title-row">
-                      <strong className="tx-title">{tx.items.map(i => i.name).join(', ')}</strong>
+                      <strong className="tx-title">{tx.campaign || 'Penyetoran Sampah'}</strong>
                       <span className="tx-badge-verified">
-                        <CheckCircle2 size={12} /> {tx.status}
+                        {tx.status === 'verified' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                        {tx.status === 'verified' ? 'Terverifikasi' : 'Menunggu'}
                       </span>
                     </div>
                     <div className="tx-meta-row">
-                      <span><MapPin size={12} /> {tx.bankName}</span>
+                      <span><MapPin size={12} /> {tx.waste_bank}</span>
                       <span>•</span>
-                      <span><Clock size={12} /> {tx.date}</span>
+                      <span><Clock size={12} /> {new Date(tx.created_at).toLocaleDateString('id-ID')}</span>
                     </div>
                   </div>
                   <div className="tx-stat-col">
-                    <strong className="tx-kg-val">+{tx.totalKg} kg</strong>
-                    <span className="tx-pts-val">+{tx.pointsEarned} poin</span>
+                    <strong className="tx-kg-val">+{tx.total_weight} kg</strong>
+                    <span className="tx-pts-val">Eco Score +{Math.round(Number(tx.total_weight) * 10)}</span>
                   </div>
                 </div>
               ))}
             </div>
+            {detailLoading && <p role="status">Memuat detail transaksi...</p>}
+            {detailError && <p role="alert" style={{ color: '#ef4444' }}>{detailError}</p>}
           </div>
 
         </div>
 
-        {/* Right Column (Level Progress, Missions, Quick Links) */}
-        <div className="dashboard-right-col">
+        {/* Right Column (Gamification, Missions, Quick Links) */}
+        <div className="dashboard-right-col" style={{ minWidth: 0 }}>
           
-          {/* Level Hero Widget */}
+          {/* Gamification Summary */}
           <div className="dash-card">
             <div className="level-card-top">
               <div className="level-icon-wrapper">
                 <Trophy size={24} />
               </div>
               <div>
-                <span className="level-rank-title">{user.levelTitle}</span>
-                <h3 className="level-number">Level {user.level}</h3>
+                <span className="level-rank-title">Gamifikasi EcoLink</span>
+                <h3 className="level-number">Misi & Lencana</h3>
               </div>
             </div>
 
             <div className="xp-progress-block">
-              <div className="xp-text-flex">
-                <span>{user.currentXp} XP</span>
-                <span>{user.nextLevelXp} XP</span>
-              </div>
-              <div className="xp-track">
-                <div className="xp-fill" style={{ width: `${levelProgress}%` }} />
-              </div>
               <p className="xp-hint">
-                Kurang <strong>{user.nextLevelXp - user.currentXp} XP</strong> lagi untuk membuka Level {user.level + 1} dan Lencana Pahlawan Daur Ulang.
+                Level dan XP belum tersedia. Pantau progress misi dan lencana dari aktivitas akunmu.
               </p>
             </div>
 
-            <Link to="/app/badges" className="btn btn-outline w-100 justify-center">
-              <span>Lihat Semua Lencana ({user.badgesCount})</span>
+            <Link to="/app/missions" className="btn btn-outline w-100 justify-center">
+              <span>Lihat Semua Lencana</span>
               <ArrowRight size={14} />
             </Link>
           </div>
 
-          {/* Weekly Missions Preview */}
+          {/* Account Missions Preview */}
           <div className="dash-card">
             <div className="dash-card-header">
               <div>
-                <h3 className="dash-card-title">Misi Mingguan</h3>
-                <span className="dash-card-sub">Selesaikan misi untuk bonus poin & XP</span>
+                <h3 className="dash-card-title">Misi Akun</h3>
+                <span className="dash-card-sub">Progress dari aktivitas akun terverifikasi</span>
               </div>
             </div>
 
             <div className="missions-stack">
-              {USER_MISSIONS.slice(0, 3).map((mission) => {
-                const isDone = mission.progress >= mission.target;
-                const pct = Math.min(100, Math.round((mission.progress / mission.target) * 100));
+              {missionsLoading ? (
+                <p role="status">Memuat misi...</p>
+              ) : missionsError ? (
+                <p role="alert">{missionsError}</p>
+              ) : missions.length === 0 ? (
+                <p>Belum ada misi tersedia.</p>
+              ) : missions.slice(0, 3).map((mission) => {
+                const isDone = mission.status === 'completed';
+                const value = Number(mission.percentage || 0);
+                const percentage = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
 
                 return (
-                  <div key={mission.id} className="mission-item-box">
+                  <div key={mission.id} className={`mission-item-box ${isDone ? 'completed' : ''}`}>
                     <div className="mission-top-row">
                       <strong className="mission-name">{mission.title}</strong>
                       {isDone ? (
@@ -293,22 +522,23 @@ export default function UserDashboard() {
                           <CheckCircle2 size={14} /> Selesai
                         </span>
                       ) : (
-                        <span className="badge-reward">+{mission.rewardPoints} poin</span>
+                        <span className="badge-reward">Berlangsung</span>
                       )}
                     </div>
-                    <div className="mission-track-bg">
-                      <div className="mission-fill" style={{ width: `${pct}%` }} />
+                    <p className="mission-desc">{mission.description}</p>
+                    <div className="mission-track-bg" role="progressbar" aria-label={mission.title} aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100}>
+                      <div className="mission-fill" style={{ width: `${percentage}%` }} />
                     </div>
                     <div className="mission-footer-text">
-                      <span>{mission.progress} / {mission.target} {mission.unit}</span>
-                      {mission.badgeAward && <span className="text-emerald font-semibold">Lencana: {mission.badgeAward}</span>}
+                      <span>{mission.progress} / {mission.target_value}</span>
+                      <span>{percentage.toFixed(percentage % 1 === 0 ? 0 : 1)}%</span>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <Link to="/app/badges" className="btn btn-outline w-100 justify-center" style={{ marginTop: '0.85rem' }}>
+            <Link to="/app/missions" className="btn btn-outline w-100 justify-center" style={{ marginTop: '0.85rem' }}>
               Buka Pusat Misi Lengkap
             </Link>
           </div>
@@ -319,7 +549,7 @@ export default function UserDashboard() {
             <div className="shortcuts-grid">
               <Link to="/app/rewards" className="shortcut-btn">
                 <Gift size={18} className="text-gold" />
-                <span>Tukar Poin</span>
+                <span>Rewards & Eco Score</span>
               </Link>
               <Link to="/waste-banks" className="shortcut-btn">
                 <MapPin size={18} className="text-emerald" />
@@ -346,8 +576,8 @@ export default function UserDashboard() {
           <div className="tx-receipt-modal" onClick={(e) => e.stopPropagation()}>
             <div className="receipt-modal-header">
               <div>
-                <span className="receipt-tag">BUKTI SETORAN SAH</span>
-                <h3 className="receipt-id">{selectedTx.id}</h3>
+                <span className="receipt-tag">DETAIL TRANSAKSI ECOLINK</span>
+                <h3 className="receipt-id">TRX-{selectedTx.transaction_id}</h3>
               </div>
               <button
                 type="button"
@@ -361,30 +591,32 @@ export default function UserDashboard() {
 
             <div className="receipt-modal-body">
               <div className="receipt-verified-banner">
-                <ShieldCheck size={20} className="text-emerald" />
+                {selectedTx.status === 'verified'
+                  ? <ShieldCheck size={20} className="text-emerald" />
+                  : <Clock size={20} className="text-emerald" />}
                 <div>
-                  <strong>Terverifikasi Resmi di Timbangan</strong>
-                  <p>Kode Verifikasi: {selectedTx.verificationCode}</p>
+                  <strong>
+                    {selectedTx.status === 'verified' ? 'Transaksi Terverifikasi' : 'Menunggu Verifikasi'}
+                  </strong>
+                  <p>Status transaksi: {selectedTx.status}</p>
                 </div>
               </div>
 
               <div className="receipt-info-grid">
                 <div>
                   <span className="lbl">Bank Sampah:</span>
-                  <strong>{selectedTx.bankName}</strong>
-                  <p className="sub">{selectedTx.bankAddress}</p>
+                  <strong>{selectedTx.waste_bank}</strong>
                 </div>
                 <div>
-                  <span className="lbl">Petugas Penimbang:</span>
-                  <strong>{selectedTx.tellerName}</strong>
-                  <p className="sub">Waktu: {selectedTx.date}</p>
+                  <span className="lbl">Waktu Transaksi:</span>
+                  <strong>{new Date(selectedTx.created_at).toLocaleString('id-ID')}</strong>
                 </div>
               </div>
 
-              {selectedTx.campaignName && (
+              {selectedTx.campaign && (
                 <div className="receipt-campaign-ref">
                   <Target size={15} className="text-emerald" />
-                  <span>Disalurkan ke: <strong>{selectedTx.campaignName}</strong></span>
+                  <span>Disalurkan ke: <strong>{selectedTx.campaign}</strong></span>
                 </div>
               )}
 
@@ -395,15 +627,14 @@ export default function UserDashboard() {
                   <span className="text-right">Harga/kg</span>
                   <span className="text-right">Subtotal</span>
                 </div>
-                {selectedTx.items.map((item, idx) => (
-                  <div key={idx} className="receipt-table-row">
+                {selectedTx.items.map((item) => (
+                  <div key={item.waste_category_id} className="receipt-table-row">
                     <div>
-                      <strong>{item.name}</strong>
-                      <span className="item-cat-pill">{item.category}</span>
+                      <strong>{item.waste_category_name}</strong>
                     </div>
-                    <span>{item.weightKg} kg</span>
-                    <span className="text-right">Rp {item.pricePerKg.toLocaleString('id-ID')}</span>
-                    <span className="text-right font-semibold">Rp {item.subtotal.toLocaleString('id-ID')}</span>
+                    <span>{item.weight} kg</span>
+                    <span className="text-right">Rp {Number(item.unit_price).toLocaleString('id-ID')}</span>
+                    <span className="text-right font-semibold">Rp {Number(item.subtotal).toLocaleString('id-ID')}</span>
                   </div>
                 ))}
               </div>
@@ -411,21 +642,17 @@ export default function UserDashboard() {
               <div className="receipt-total-box">
                 <div className="total-row">
                   <span>Total Berat Fisik:</span>
-                  <strong>{selectedTx.totalKg} kg</strong>
+                  <strong>{selectedTx.total_weight} kg</strong>
                 </div>
                 <div className="total-row">
-                  <span>Poin Diperoleh:</span>
-                  <strong className="text-gold">+{selectedTx.pointsEarned} poin</strong>
+                  <span>Eco Score:</span>
+                  <strong className="text-gold">+{Math.round(Number(selectedTx.total_weight) * 10)}</strong>
                 </div>
                 <div className="total-row grand-total">
-                  <span>Nilai Rupiah Diterima:</span>
-                  <strong className="text-emerald">Rp {selectedTx.rupiahAmount.toLocaleString('id-ID')}</strong>
+                  <span>Nilai Transaksi:</span>
+                  <strong className="text-emerald">Rp {Number(selectedTx.total_value).toLocaleString('id-ID')}</strong>
                 </div>
               </div>
-
-              {selectedTx.notes && (
-                <p className="receipt-notes">Catatan Petugas: "{selectedTx.notes}"</p>
-              )}
             </div>
 
             <div className="receipt-modal-footer">
@@ -434,7 +661,7 @@ export default function UserDashboard() {
                 className="btn btn-outline w-100 justify-center"
                 onClick={() => setSelectedTx(null)}
               >
-                Tutup Bukti Setoran
+                Tutup Detail
               </button>
             </div>
           </div>

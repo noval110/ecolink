@@ -1,0 +1,87 @@
+.deposit-page {
+  width: 100%;
+  max-width: 960px;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.deposit-empty {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+}
+
+.deposit-prediction {
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  border-radius: 14px;
+  background: #f0fdf4;
+  border: 1px solid #d1fae5;
+  color: #14532d;
+}
+
+.deposit-prediction h2 {
+  margin: 0.35rem 0;
+  font-size: 1.25rem;
+}
+
+.deposit-reclassify {
+  margin-top: 0.75rem;
+  border: 1px solid #166534;
+  color: #14532d;
+  background: transparent;
+}
+
+.deposit-fields {
+  display: grid;
+  gap: 1.125rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.deposit-fields input,
+.deposit-fields select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.8rem 1rem !important;
+  background: #062415;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: white;
+  color-scheme: dark;
+  font: inherit;
+}
+
+.deposit-fields select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.deposit-page form > button {
+  margin-top: 1.25rem;
+}
+
+.deposit-error,
+.deposit-success {
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+
+.deposit-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.deposit-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.deposit-page button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

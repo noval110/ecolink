@@ -13,30 +13,79 @@ import {
   Menu,
   X,
   ExternalLink,
-  ChevronRight,
-  Sparkles,
   ShieldCheck,
   TrendingUp,
   Award,
-  Bell,
   Copy,
   Check,
   Gift,
-  Users
+  Sparkles,
 } from 'lucide-react';
-import { getActiveUser } from '../data/mockUserData';
+import {
+  getStoredUser,
+  logoutUser,
+  getPassport,
+} from '../services/api';
 
 export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(getActiveUser());
+  const [currentUser, setCurrentUser] = useState(() => {
+    const storedUser = getStoredUser();
+    return {
+      name: storedUser?.full_name || 'Pengguna',
+      role: storedUser?.role || '',
+      passportId: null,
+      totalRecycledKg: null,
+      ecoScore: null,
+    };
+  });
+  const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState('');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
 
   useEffect(() => {
+    let active = true;
+
+    const loadPassport = async () => {
+      try {
+        const result = await getPassport();
+        const data = result.data;
+
+        if (!active) return;
+
+        setCurrentUser({
+          name: data.user.full_name,
+          role: data.user.role,
+          passportId: data.passport_id,
+          totalRecycledKg: data.stats.total_recycled,
+          ecoScore: data.stats.eco_score,
+        });
+      } catch {
+        if (active) setProfileError('Data profil belum dapat dimuat.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadPassport();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const handleProfileChange = () => {
-      setCurrentUser(getActiveUser());
+      const user = getStoredUser();
+      if (!user) return;
+      setCurrentUser((current) => ({
+        ...current,
+        name: user.full_name || current.name,
+        role: user.role || current.role,
+      }));
     };
     window.addEventListener('ecolink_profile_changed', handleProfileChange);
     return () => window.removeEventListener('ecolink_profile_changed', handleProfileChange);
@@ -45,25 +94,38 @@ export default function DashboardLayout() {
   const navItems = [
     { name: 'Dasbor Utama', path: '/app', icon: LayoutDashboard, exact: true },
     { name: 'Eco Passport Digital', path: '/app/passport', icon: QrCode },
-    { name: 'Tukar Poin & Hadiah', path: '/app/rewards', icon: Gift },
+    { name: 'Rewards & Eco Score', path: '/app/rewards', icon: Gift },
     { name: 'Riwayat Transaksi', path: '/app/transactions', icon: ReceiptText },
     { name: 'Kampanye Saya', path: '/app/campaigns', icon: Target },
-    { name: 'Misi & Lencana', path: '/app/badges', icon: Trophy },
+    { name: 'Misi & Lencana', path: '/app/missions', icon: Trophy },
+    { name: 'AI Classifier', path: '/app/ai-classifier', icon: Sparkles },
     { name: 'Titik Setor Bank Sampah', path: '/waste-banks', icon: MapPin, isExternalNav: true },
     { name: 'Profil & Akun', path: '/app/profile', icon: User },
   ];
 
-  const handleCopyPassportId = () => {
-    navigator.clipboard.writeText(currentUser.passportId);
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
+  const handleCopyPassportId = async () => {
+    if (!currentUser.passportId) return;
+    try {
+      await navigator.clipboard.writeText(currentUser.passportId);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    } catch {
+      setCopiedId(false);
+    }
   };
 
   const handleLogout = () => {
-    navigate('/');
+    logoutUser();
+    navigate('/login', {
+      replace: true,
+    });
   };
 
-  const currentLevelProgress = Math.round((currentUser.currentXp / currentUser.nextLevelXp) * 100);
+  const userInitials = currentUser.name.trim().split(/\s+/)
+    .slice(0, 2).map((part) => Array.from(part)[0]).join('').toUpperCase();
+  const passportLabel = currentUser.passportId || (
+    loading ? 'Memuat ID paspor...' : 'ID paspor tidak tersedia'
+  );
 
   return (
     <div className="dashboard-app-root">
@@ -90,7 +152,7 @@ export default function DashboardLayout() {
           </Link>
           <div className="sidebar-role-badge">
             <span className="badge-dot-green"></span>
-            <span>{currentUser.categoryLabel.split('/')[0].trim()}</span>
+            <span>{currentUser.role || 'Pengguna'}</span>
           </div>
 
           <button
@@ -107,29 +169,22 @@ export default function DashboardLayout() {
         <div className="sidebar-passport-card">
           <div className="sidebar-passport-header">
             <div className="user-avatar-small">
-              <img src={currentUser.avatar} alt={currentUser.name} />
-              <span className="avatar-verify-badge">
-                <ShieldCheck size={10} color="#062415" />
-              </span>
+              <span className="user-avatar-initials" aria-hidden="true">{userInitials}</span>
             </div>
             <div className="passport-text-col">
               <strong className="sidebar-user-name">{currentUser.name}</strong>
-              <span className="sidebar-user-id">{currentUser.passportId}</span>
+              <span className="sidebar-user-id">{passportLabel}</span>
             </div>
           </div>
 
           <div className="sidebar-xp-bar-box">
-            <div className="xp-labels-row">
-              <span>Level {currentUser.level}</span>
-              <span>{currentUser.currentXp} / {currentUser.nextLevelXp} XP</span>
-            </div>
-            <div className="xp-track">
-              <div className="xp-fill" style={{ width: `${currentLevelProgress}%` }} />
-            </div>
+            <span className="xp-labels-row">Level & XP belum tersedia</span>
+            {profileError && <span className="xp-labels-row" role="alert">{profileError}</span>}
           </div>
 
           <button
             type="button"
+            disabled={!currentUser.passportId}
             onClick={() => setShowQrModal(true)}
             className="sidebar-qr-trigger-btn"
           >
@@ -214,23 +269,24 @@ export default function DashboardLayout() {
           </div>
 
           <div className="topbar-right">
-            {/* Quick Points Pill */}
-            <Link to="/app/rewards" className="topbar-metric-pill" title="Tukar Poin EcoLink">
+            {/* Quick Eco Score Pill */}
+            <div className="topbar-metric-pill" title="Eco Score dari transaksi terverifikasi">
               <Award size={15} className="text-gold" />
-              <strong>{currentUser.points.toLocaleString()}</strong>
-              <span className="pill-sub">poin</span>
-            </Link>
+              <strong>{currentUser.ecoScore?.toLocaleString('id-ID') ?? '—'}</strong>
+              <span className="pill-sub">score</span>
+            </div>
 
             {/* Quick Kg Pill */}
             <div className="topbar-metric-pill d-none-mobile" title="Total Sampah Terverifikasi">
               <TrendingUp size={15} className="text-emerald" />
-              <strong>{currentUser.totalRecycledKg}</strong>
+              <strong>{currentUser.totalRecycledKg ?? '—'}</strong>
               <span className="pill-sub">kg</span>
             </div>
 
             {/* Quick QR Modal Trigger Button */}
             <button
               type="button"
+              disabled={!currentUser.passportId}
               onClick={() => setShowQrModal(true)}
               className="btn btn-light-green topbar-qr-cta"
             >
@@ -240,10 +296,10 @@ export default function DashboardLayout() {
 
             {/* User Avatar Badge */}
             <Link to="/app/profile" className="topbar-user-badge">
-              <img src={currentUser.avatar} alt={currentUser.name} className="topbar-avatar" />
+              <span className="topbar-avatar user-avatar-initials" aria-hidden="true">{userInitials}</span>
               <div className="user-badge-info d-none-mobile">
                 <span className="user-badge-name">{currentUser.name}</span>
-                <span className="user-badge-role">Level {currentUser.level} • {currentUser.role}</span>
+                <span className="user-badge-role">{currentUser.role || 'Pengguna'}</span>
               </div>
             </Link>
           </div>
@@ -300,7 +356,7 @@ export default function DashboardLayout() {
                   </div>
                   <div className="id-holder-details">
                     <strong className="id-holder-name">{currentUser.name}</strong>
-                    <span className="id-holder-role-pill">{currentUser.categoryLabel}</span>
+                    <span className="id-holder-role-pill">{currentUser.role || 'Pengguna'}</span>
                   </div>
                 </div>
               </div>

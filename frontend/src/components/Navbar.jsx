@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Menu, X, Leaf, ArrowRight } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import {
+  isAuthenticated,
+  getStoredUser,
+} from '../services/api';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const loggedIn = isAuthenticated();
+  const currentUser = getStoredUser();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,11 +22,15 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
     }
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, [isOpen]);
 
   const navLinks = [
@@ -73,14 +83,27 @@ export default function Navbar() {
             <span className="search-hint">Cari...</span>
           </Link>
 
-          <Link to="/login" className="nav-login-link" onClick={() => setIsOpen(false)}>
-            Masuk
-          </Link>
-
-          <Link to="/register" className="nav-register-btn" onClick={() => setIsOpen(false)}>
-            <span>Daftar</span>
-            <ArrowRight size={14} />
-          </Link>
+          {loggedIn ? (
+            <>
+              <span className="nav-login-link">
+                {currentUser?.full_name || 'Akun'}
+              </span>
+              <Link to="/dashboard" className="nav-register-btn" onClick={() => setIsOpen(false)}>
+                <span>Dashboard</span>
+                <ArrowRight size={14} />
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="nav-login-link" onClick={() => setIsOpen(false)}>
+                Masuk
+              </Link>
+              <Link to="/register" className="nav-register-btn" onClick={() => setIsOpen(false)}>
+                <span>Daftar</span>
+                <ArrowRight size={14} />
+              </Link>
+            </>
+          )}
 
           {/* Mobile Toggle Button */}
           <button 
@@ -112,12 +135,20 @@ export default function Navbar() {
             </ul>
 
             <div className="mobile-drawer-actions">
-              <Link to="/login" className="btn btn-outline w-100 justify-center" onClick={() => setIsOpen(false)}>
-                Masuk ke Akun
-              </Link>
-              <Link to="/register" className="btn btn-light-green w-100 justify-center" onClick={() => setIsOpen(false)}>
-                Daftar Sekarang
-              </Link>
+              {loggedIn ? (
+                <Link to="/dashboard" className="btn btn-light-green w-100 justify-center" onClick={() => setIsOpen(false)}>
+                  Buka Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="btn btn-outline w-100 justify-center" onClick={() => setIsOpen(false)}>
+                    Masuk ke Akun
+                  </Link>
+                  <Link to="/register" className="btn btn-light-green w-100 justify-center" onClick={() => setIsOpen(false)}>
+                    Daftar Sekarang
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
