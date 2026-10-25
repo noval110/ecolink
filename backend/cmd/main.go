@@ -85,6 +85,7 @@ func main() {
 	e.Use(echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
 		AllowOrigins: []string{
 			"http://localhost:5173",
+			"https://ecolink-sigma.vercel.app",
 		},
 		AllowMethods: []string{
 			http.MethodGet,
