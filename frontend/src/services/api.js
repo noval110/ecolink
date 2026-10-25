@@ -1,5 +1,6 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:8080/api';
 
 async function request(path, options = {}) {
   const token = localStorage.getItem('ecolink_token');
@@ -13,7 +14,7 @@ async function request(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
   });
@@ -69,7 +70,7 @@ export async function classifyWasteImage(file) {
   const formData = new FormData();
   formData.append('image', file);
 
-  const response = await fetch('http://127.0.0.1:8080/api/ai/classify', {
+  const response = await fetch(`${API_URL}/ai/classify`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
