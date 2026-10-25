@@ -33,7 +33,7 @@ func TestCreateTransactionAuthorization(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil,
-		handlers.NewTransactionDBHandler(nil), nil, nil, secret,
+		handlers.NewTransactionDBHandler(nil), nil, nil, nil, nil, secret,
 	)
 
 	tests := []struct {
@@ -82,7 +82,7 @@ func TestVerifyTransactionAuthorization(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil,
-		handlers.NewTransactionDBHandler(nil), nil, nil, secret,
+		handlers.NewTransactionDBHandler(nil), nil, nil, nil, nil, secret,
 	)
 
 	tests := []struct {
@@ -132,7 +132,7 @@ func TestTransactionReadRoutesRequireJWT(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil,
-		handlers.NewTransactionDBHandler(nil), nil, nil, secret,
+		handlers.NewTransactionDBHandler(nil), nil, nil, nil, nil, secret,
 	)
 
 	tests := []struct {

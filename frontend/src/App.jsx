@@ -24,6 +24,8 @@ import UserCampaignsPage from './pages/app/UserCampaignsPage';
 import UserMissionsPage from './pages/app/UserMissionsPage';
 import UserProfilePage from './pages/app/UserProfilePage';
 import UserRewardsPage from './pages/app/UserRewardsPage';
+import WasteClassifierPage from './pages/app/WasteClassifierPage';
+import DepositPage from './pages/app/DepositPage';
 
 function App() {
   return (
@@ -60,6 +62,8 @@ function App() {
           <Route path="transactions" element={<UserTransactionsPage />} />
           <Route path="campaigns" element={<UserCampaignsPage />} />
           <Route path="missions" element={<UserMissionsPage />} />
+          <Route path="ai-classifier" element={<WasteClassifierPage />} />
+          <Route path="deposit" element={<DepositPage />} />
           <Route path="badges" element={<Navigate to="/app/missions" replace />} />
           <Route path="profile" element={<UserProfilePage />} />
         </Route>

@@ -30,7 +30,7 @@ func TestMeRoutesRequireJWT(t *testing.T) {
 	}
 
 	e := echo.New()
-	routes.RegisterRoutesWithAuth(e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil, nil, nil, nil, secret)
+	routes.RegisterRoutesWithAuth(e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, secret)
 
 	tests := []struct {
 		name   string
@@ -60,7 +60,7 @@ func TestMeRoutesRequireJWT(t *testing.T) {
 
 func TestAuthRoutesRemainPublicWithJWT(t *testing.T) {
 	e := echo.New()
-	routes.RegisterRoutesWithAuth(e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil, nil, nil, nil, "test-secret")
+	routes.RegisterRoutesWithAuth(e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, "test-secret")
 
 	for _, path := range []string{"/api/auth/register", "/api/auth/login"} {
 		t.Run(path, func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestGamificationRoutesRequireJWT(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil, nil, nil,
-		handlers.NewGamificationHandler(nil), secret,
+		handlers.NewGamificationHandler(nil), nil, nil, secret,
 	)
 
 	tests := []struct {
@@ -135,7 +135,7 @@ func TestGamificationRoutesUnavailableWithoutJWTSecret(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil, nil, nil,
-		handlers.NewGamificationHandler(nil), "",
+		handlers.NewGamificationHandler(nil), nil, nil, "",
 	)
 
 	for _, path := range []string{"/api/me/missions", "/api/me/badges"} {

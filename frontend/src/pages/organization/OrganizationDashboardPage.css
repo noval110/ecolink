@@ -1,0 +1,74 @@
+.organization-campaign-form {
+  /* Keep form spacing when the shared mobile section rule applies. */
+  padding: clamp(1rem, 3vw, 1.75rem) !important;
+}
+
+.organization-campaign-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.organization-campaign-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.organization-campaign-form .profile-form-fields {
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+}
+
+.organization-campaign-form .form-field-group {
+  min-width: 0;
+}
+
+.organization-campaign-form .form-field-group input,
+.organization-campaign-form textarea {
+  padding: 0.8rem 1rem !important;
+  color-scheme: dark;
+}
+
+.organization-campaign-form textarea {
+  width: 100%;
+  min-height: 7rem;
+  resize: vertical;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: white;
+  font: inherit;
+}
+
+.organization-campaign-form textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.organization-campaign-partners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.organization-campaign-partners .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+
+.organization-campaign-error {
+  color: #f87171;
+  margin-top: 1rem;
+}
+
+.organization-campaign-form button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}

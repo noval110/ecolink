@@ -4,6 +4,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   CheckCircle2,
@@ -40,7 +41,14 @@ function formatDate(value) {
 }
 
 export default function BankDashboardPage() {
+  const navigate = useNavigate();
   const user = getStoredUser();
+
+  const handleLogout = () => {
+    localStorage.removeItem('ecolink_token');
+    localStorage.removeItem('ecolink_user');
+    navigate('/login', { replace: true });
+  };
 
   const [transactions, setTransactions] =
     useState([]);
@@ -167,6 +175,15 @@ export default function BankDashboardPage() {
               'Petugas Bank Sampah'}
           </strong>
         </p>
+
+        <button
+          type="button"
+          className="btn btn-outline"
+          onClick={handleLogout}
+          style={{ marginTop: '1.25rem' }}
+        >
+          Keluar Akun
+        </button>
 
         <div
           className="dash-card"

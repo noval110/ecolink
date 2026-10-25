@@ -64,6 +64,51 @@ export function getDashboard() {
   return request('/me/dashboard');
 }
 
+export async function classifyWasteImage(file) {
+  const token = localStorage.getItem('ecolink_token');
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetch('http://127.0.0.1:8080/api/ai/classify', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error('Server mengembalikan response yang tidak valid.');
+  }
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Gagal mengklasifikasikan gambar.');
+  }
+  return data;
+}
+
+export function getOrganizationDashboard() {
+  return request('/organization/dashboard');
+}
+
+export function getOrganizationCampaigns() {
+  return request('/organization/campaigns');
+}
+
+export function createOrganizationCampaign(payload) {
+  return request('/organization/campaigns', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateOrganizationCampaignStatus(id, status) {
+  return request(`/organization/campaigns/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
 export function getPassport() {
   return request('/me/passport');
 }
@@ -82,6 +127,13 @@ export function getMyTransactions(status = '') {
     : '';
 
   return request(`/me/transactions${query}`);
+}
+
+export function createTransaction(payload) {
+  return request('/transactions', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 export function getTransactionById(id) {

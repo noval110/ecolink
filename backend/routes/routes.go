@@ -19,6 +19,8 @@ func RegisterRoutes(e *echo.Echo) {
 		nil,
 		nil,
 		nil,
+		nil,
+		nil,
 		"",
 	)
 }
@@ -34,6 +36,8 @@ func RegisterRoutesWithAuth(
 	transactionHandler *handlers.TransactionDBHandler,
 	passportHandler *handlers.PassportHandler,
 	gamificationHandler *handlers.GamificationHandler,
+	organizationHandler *handlers.OrganizationDBHandler,
+	aiHandler *handlers.AIHandler,
 	jwtSecret string,
 ) {
 	registerRoutes(
@@ -47,6 +51,8 @@ func RegisterRoutesWithAuth(
 		transactionHandler,
 		passportHandler,
 		gamificationHandler,
+		organizationHandler,
+		aiHandler,
 		jwtSecret,
 	)
 }
@@ -62,6 +68,8 @@ func registerRoutes(
 	transactionHandler *handlers.TransactionDBHandler,
 	passportHandler *handlers.PassportHandler,
 	gamificationHandler *handlers.GamificationHandler,
+	organizationHandler *handlers.OrganizationDBHandler,
+	aiHandler *handlers.AIHandler,
 	jwtSecret string,
 ) {
 	api := e.Group("/api")
@@ -71,6 +79,19 @@ func registerRoutes(
 	auth := api.Group("/auth")
 	auth.POST("/register", authHandler.Register)
 	auth.POST("/login", authHandler.Login)
+
+	if aiHandler != nil && jwtSecret != "" {
+		api.POST("/ai/classify", aiHandler.PredictWaste, middleware.RequireAuth(jwtSecret))
+	}
+
+	if organizationHandler != nil && jwtSecret != "" {
+		organization := api.Group("/organization")
+		organization.Use(middleware.RequireAuth(jwtSecret))
+		organization.GET("/dashboard", organizationHandler.Dashboard)
+		organization.GET("/campaigns", organizationHandler.Campaigns)
+		organization.POST("/campaigns", organizationHandler.CreateCampaign)
+		organization.PATCH("/campaigns/:id/status", organizationHandler.UpdateCampaignStatus)
+	}
 
 	if transactionHandler != nil && jwtSecret != "" {
 		bank := api.Group("/bank")

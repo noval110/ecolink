@@ -33,7 +33,7 @@ func TestUpdateProfileAuthorizationAndValidation(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), handlers.NewProfileHandler(nil),
-		nil, nil, nil, nil, nil, nil, nil, secret,
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, secret,
 	)
 
 	validToken := signToken("user", secret, time.Now().Add(time.Hour))

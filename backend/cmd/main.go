@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -67,6 +68,16 @@ func main() {
 		gamificationRepository,
 	)
 
+	organizationRepository := repositories.NewOrganizationRepository(db)
+	organizationHandler := handlers.NewOrganizationDBHandler(organizationRepository)
+
+	aiServiceURL := os.Getenv("AI_SERVICE_URL")
+	if aiServiceURL == "" {
+		aiServiceURL = "http://127.0.0.1:8000"
+	}
+	aiService := services.NewAIService(aiServiceURL)
+	aiHandler := handlers.NewAIHandler(aiService)
+
 	e := echo.New()
 
 	e.Logger.Info("PostgreSQL connected successfully")
@@ -102,6 +113,8 @@ func main() {
 		transactionHandler,
 		passportHandler,
 		gamificationHandler,
+		organizationHandler,
+		aiHandler,
 		cfg.JWTSecret,
 	)
 

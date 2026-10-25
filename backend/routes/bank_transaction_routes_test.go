@@ -32,7 +32,7 @@ func TestBankTransactionsAuthorizationAndStatusValidation(t *testing.T) {
 	e := echo.New()
 	routes.RegisterRoutesWithAuth(
 		e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil,
-		handlers.NewTransactionDBHandler(nil), nil, nil, secret,
+		handlers.NewTransactionDBHandler(nil), nil, nil, nil, nil, secret,
 	)
 
 	validBankToken := signToken("waste_bank", secret, time.Now().Add(time.Hour))
@@ -85,7 +85,7 @@ func TestBankTransactionsUnavailableWithoutConfiguration(t *testing.T) {
 			e := echo.New()
 			routes.RegisterRoutesWithAuth(
 				e, handlers.NewAuthHandler(nil), nil, nil, nil, nil, nil,
-				test.handler, nil, nil, test.secret,
+				test.handler, nil, nil, nil, nil, test.secret,
 			)
 			response := httptest.NewRecorder()
 			e.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/bank/transactions", nil))

@@ -18,7 +18,8 @@ import {
   Award,
   Copy,
   Check,
-  Gift
+  Gift,
+  Sparkles,
 } from 'lucide-react';
 import {
   getStoredUser,
@@ -97,6 +98,7 @@ export default function DashboardLayout() {
     { name: 'Riwayat Transaksi', path: '/app/transactions', icon: ReceiptText },
     { name: 'Kampanye Saya', path: '/app/campaigns', icon: Target },
     { name: 'Misi & Lencana', path: '/app/missions', icon: Trophy },
+    { name: 'AI Classifier', path: '/app/ai-classifier', icon: Sparkles },
     { name: 'Titik Setor Bank Sampah', path: '/waste-banks', icon: MapPin, isExternalNav: true },
     { name: 'Profil & Akun', path: '/app/profile', icon: User },
   ];

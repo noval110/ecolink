@@ -1,0 +1,86 @@
+.waste-classifier-page {
+  width: 100%;
+  max-width: 960px;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.waste-classifier-panel {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.waste-classifier-panel label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.waste-classifier-panel .form-field-group input {
+  min-width: 0;
+  padding: 0.8rem 1rem !important;
+}
+
+.waste-classifier-panel > button {
+  justify-self: start;
+  max-width: 100%;
+}
+
+.waste-classifier-preview {
+  margin: 0;
+}
+
+.waste-classifier-preview figcaption {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.waste-classifier-preview img {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.waste-classifier-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.65);
+  text-align: center;
+}
+
+.waste-classifier-error {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #991b1b;
+  overflow-wrap: anywhere;
+}
+
+.waste-classifier-result {
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid #d1fae5;
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.waste-classifier-result h2 {
+  margin: 0.6rem 0;
+  font-size: 1.4rem;
+}
+
+.waste-classifier-result p + p {
+  margin-top: 0.5rem;
+}
+
+.waste-classifier-result button {
+  margin-top: 1rem;
+}
