@@ -24,6 +24,8 @@ import {
   updateStoredUser,
 } from '../../services/api';
 
+import './UserProfilePage.css';
+
 function formatDate(value) {
   if (!value) return '-';
   const date = new Date(value);
@@ -575,78 +577,31 @@ export default function UserProfilePage() {
           </form>
 
           {/* ACCOUNT INFO */}
-          <div
-            className="dash-card"
-            style={{
-              marginTop: '1.5rem',
-            }}
-          >
-
-            <h3 className="dash-card-title">
+          <section className="dash-card profile-account-summary" aria-labelledby="account-summary-title">
+            <h3 id="account-summary-title" className="dash-card-title">
               Ringkasan Akun
             </h3>
-
-            <div
-              style={{
-                display: 'grid',
-                gap: '1rem',
-                marginTop: '1rem',
-              }}
-            >
-
-              <div>
-                <Calendar
-                  size={16}
-                />
-
-                <strong>
-                  {' '}Bergabung
-                </strong>
-
-                <p>
-                  {formatDate(
-                    profile.created_at
-                  )}
-                </p>
+            <dl className="profile-account-summary-grid">
+              <div className="profile-account-summary-item">
+                <dt><Calendar size={15} aria-hidden="true" /> Bergabung</dt>
+                <dd className="profile-account-summary-date">
+                  {formatDate(profile.created_at)}
+                </dd>
               </div>
-
-              <div>
-                <Leaf size={16} />
-
-                <strong>
-                  {' '}Total Daur Ulang
-                </strong>
-
-                <p>
-                  {totalRecycled} kg
-                </p>
+              <div className="profile-account-summary-item">
+                <dt><Leaf size={15} aria-hidden="true" /> Total Daur Ulang</dt>
+                <dd>{totalRecycled} <span className="profile-account-summary-unit">kg</span></dd>
               </div>
-
-              <div>
-                <Award size={16} />
-
-                <strong>
-                  {' '}Eco Score
-                </strong>
-
-                <p>{ecoScore}</p>
+              <div className="profile-account-summary-item">
+                <dt><Award size={15} aria-hidden="true" /> Eco Score</dt>
+                <dd>{ecoScore}</dd>
               </div>
-
-              <div>
-                <Scale size={16} />
-
-                <strong>
-                  {' '}CO₂ Terhindar
-                </strong>
-
-                <p>
-                  {co2Avoided} kg
-                </p>
+              <div className="profile-account-summary-item">
+                <dt><Scale size={15} aria-hidden="true" /> CO₂ Terhindar</dt>
+                <dd>{co2Avoided} <span className="profile-account-summary-unit">kg</span></dd>
               </div>
-
-            </div>
-
-          </div>
+            </dl>
+          </section>
 
         </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Menu, X, Leaf, ArrowRight } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import AccountMenu from './AccountMenu';
 import {
   isAuthenticated,
   getStoredUser,
@@ -85,9 +86,11 @@ export default function Navbar() {
 
           {loggedIn ? (
             <>
-              <span className="nav-login-link">
-                {currentUser?.full_name || 'Akun'}
-              </span>
+              <AccountMenu
+                key={location.pathname}
+                user={currentUser}
+                onOpen={() => setIsOpen(false)}
+              />
               <Link to="/dashboard" className="nav-register-btn" onClick={() => setIsOpen(false)}>
                 <span>Dashboard</span>
                 <ArrowRight size={14} />
@@ -109,7 +112,9 @@ export default function Navbar() {
           <button 
             className="mobile-toggle-btn" 
             onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle Menu"
+            aria-label={isOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+            aria-expanded={isOpen}
+            aria-controls="public-mobile-navigation"
           >
             {isOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -118,7 +123,7 @@ export default function Navbar() {
 
       {/* Mobile Drawer Overlay */}
       {isOpen && (
-        <div className="mobile-drawer-overlay fade-in">
+        <div id="public-mobile-navigation" className="mobile-drawer-overlay fade-in">
           <div className="mobile-drawer-card">
             <ul className="mobile-nav-list">
               {navLinks.map((link) => (

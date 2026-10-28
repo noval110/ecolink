@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Leaf, Recycle, Building2, Star } from 'lucide-react';
+import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import StatsSection from './StatsSection';
 import HeroProductMockup from './HeroProductMockup';
@@ -18,7 +18,7 @@ export default function HeroSection() {
             </h1>
 
             <p className="hero-desc">
-              EcoLink menghubungkan aksi penyetoran sampah individu langsung ke target kampanye komunitas, divalidasi 100% melalui timbangan fisik Bank Sampah dan terekam di Eco Passport digitalmu.
+              Setorkan sampah ke Bank Sampah, dukung target kampanye komunitas, dan simpan kontribusi terverifikasi di Eco Passport digitalmu.
             </p>
 
             <div className="hero-actions">
@@ -31,31 +31,9 @@ export default function HeroSection() {
               </Link>
             </div>
 
-            {/* Social Proof & Trust Badges */}
-            <div className="hero-social-proof">
-              <div className="proof-avatar-stack">
-                <span className="proof-avatar" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Leaf size={14} color="#86efac" />
-                </span>
-                <span className="proof-avatar" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Recycle size={14} color="#34d399" />
-                </span>
-                <span className="proof-avatar" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={14} color="#38bdf8" />
-                </span>
-                <span className="proof-avatar proof-avatar-more">+1.2k</span>
-              </div>
-              <div className="proof-text">
-                <div className="proof-rating" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <div style={{ display: 'inline-flex', gap: '2px', alignItems: 'center' }}>
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={12} fill="#fbbf24" color="#fbbf24" />
-                    ))}
-                  </div>
-                  <strong>100% Terverifikasi</strong>
-                </div>
-                <span>Dipercaya 32+ komunitas kampus & 48 mitra bank sampah</span>
-              </div>
+            <div className="hero-social-proof hero-verification-note">
+              <ShieldCheck size={18} aria-hidden="true" />
+              <span>Kontribusi dicatat setelah setoran diverifikasi petugas Bank Sampah.</span>
             </div>
 
             {/* Live Impact Metrics Counter (Aligned with right card) */}

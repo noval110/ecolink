@@ -1,7 +1,6 @@
 import React from 'react';
 import { MapPin, Navigation, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import CountUp from './CountUp';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -60,8 +59,9 @@ export default function WasteBankNetwork() {
         <div className="section-header text-center">
           <h2 className="section-title">Jaringan <span className="highlight-text">Bank Sampah</span> Mitra</h2>
           <p className="section-desc">
-            Temukan puluhan titik lokasi setor terdekat yang sudah terverifikasi. Setorkan sampahmu dengan mudah dan aman.
+            Temukan lokasi setor dan material yang diterima melalui direktori Bank Sampah EcoLink.
           </p>
+          <p className="preview-caption">Ilustrasi jaringan dan lokasi. Lihat direktori untuk informasi mitra aktual.</p>
         </div>
 
         <div className="waste-bank-grid">
@@ -98,8 +98,8 @@ export default function WasteBankNetwork() {
 
             <div className="map-stat-overlay">
               <div>
-                <h4 className="overlay-count"><CountUp end={42} suffix="+" /> Lokasi Aktif</h4>
-                <p className="overlay-sub">Tersebar di seluruh penjuru Indonesia</p>
+                <h4 className="overlay-count">Temukan lokasi setor</h4>
+                <p className="overlay-sub">Lihat mitra yang terdaftar di direktori</p>
               </div>
               <Link to="/waste-banks" className="btn btn-outline btn-sm">Lihat Area Saya</Link>
             </div>

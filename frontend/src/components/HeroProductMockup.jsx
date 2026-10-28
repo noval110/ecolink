@@ -4,6 +4,7 @@ import { QrCode, ShieldCheck, TrendingUp, Award, Leaf, CheckCircle2 } from 'luci
 export default function HeroProductMockup() {
   return (
     <div className="hero-mockup-wrapper fade-in" style={{ animationDelay: '0.2s' }}>
+      <p className="preview-caption">Pratinjau Eco Passport · Data ilustrasi</p>
       {/* Main Showcase Card: Eco Passport Digital (Unified, no floating elements) */}
       <div className="mockup-main-card">
         {/* Card Header */}
@@ -34,7 +35,7 @@ export default function HeroProductMockup() {
           <div className="alert-banner-text">
             <div className="alert-banner-top">
               <span className="alert-title">Transaksi Terverifikasi</span>
-              <span className="live-pill">BARU</span>
+              <span className="live-pill">CONTOH</span>
             </div>
             <p className="alert-sub">+4.8 kg Plastik PET • Bank Sampah Bersih Melati</p>
           </div>
@@ -43,7 +44,6 @@ export default function HeroProductMockup() {
         {/* QR & Verification Zone */}
         <div className="passport-qr-banner">
           <div className="qr-container">
-            <div className="qr-scanner-line" />
             <div className="qr-box-inner">
               <QrCode size={64} className="qr-svg" />
             </div>

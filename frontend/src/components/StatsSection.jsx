@@ -1,20 +1,19 @@
 import React from 'react';
-import CountUp from './CountUp';
 
 export default function StatsSection() {
   return (
     <div className="hero-stats-row fade-in" style={{ animationDelay: '0.4s' }}>
       <div className="hero-stat-item">
-        <span className="hero-stat-value"><CountUp end={28450} /></span>
-        <span className="hero-stat-label">kg Sampah Didaur Ulang</span>
+        <span className="hero-stat-value">Setor</span>
+        <span className="hero-stat-label">di Bank Sampah</span>
       </div>
       <div className="hero-stat-item">
-        <span className="hero-stat-value"><CountUp end={1284} /></span>
-        <span className="hero-stat-label">Kontributor Terverifikasi</span>
+        <span className="hero-stat-value">Verifikasi</span>
+        <span className="hero-stat-label">oleh petugas</span>
       </div>
       <div className="hero-stat-item">
-        <span className="hero-stat-value"><CountUp end={32} /></span>
-        <span className="hero-stat-label">Komunitas & Kampus</span>
+        <span className="hero-stat-value">Pantau</span>
+        <span className="hero-stat-label">di Eco Passport</span>
       </div>
     </div>
   );

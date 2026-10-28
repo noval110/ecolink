@@ -165,12 +165,7 @@ export default function ExploreCampaigns() {
       <div className="container">
 
         <div
-          className="section-header text-center"
-          style={{
-            maxWidth: '820px',
-            margin:
-              '0 auto 3rem auto',
-          }}
+          className="section-header text-center public-list-header"
         >
           <h1 className="section-title">
             Jelajahi{' '}

@@ -20,6 +20,7 @@ import {
   Check,
   Gift,
   Sparkles,
+  Home,
 } from 'lucide-react';
 import {
   getStoredUser,
@@ -139,7 +140,7 @@ export default function DashboardLayout() {
       )}
 
       {/* Left Sidebar */}
-      <aside className={`dashboard-sidebar ${mobileSidebarOpen ? 'open' : ''}`}>
+      <aside id="dashboard-navigation" className={`dashboard-sidebar ${mobileSidebarOpen ? 'open' : ''}`}>
         {/* Brand Header */}
         <div className="sidebar-brand-box">
           <Link to="/" className="sidebar-logo">
@@ -235,15 +236,16 @@ export default function DashboardLayout() {
         {/* Sidebar Footer */}
         <div className="sidebar-bottom-actions">
           <Link to="/" className="sidebar-public-link">
+            <Home size={16} aria-hidden="true" />
             <span>Lihat Halaman Publik</span>
-            <ExternalLink size={13} />
+            <ExternalLink size={13} className="sidebar-public-arrow" aria-hidden="true" />
           </Link>
           <button
             type="button"
             onClick={handleLogout}
             className="sidebar-logout-btn"
           >
-            <LogOut size={16} />
+            <LogOut size={16} aria-hidden="true" />
             <span>Keluar Akun</span>
           </button>
         </div>
@@ -259,6 +261,8 @@ export default function DashboardLayout() {
               className="topbar-hamburger-btn d-block-mobile"
               onClick={() => setMobileSidebarOpen(true)}
               aria-label="Buka Menu"
+              aria-expanded={mobileSidebarOpen}
+              aria-controls="dashboard-navigation"
             >
               <Menu size={22} />
             </button>
@@ -269,6 +273,16 @@ export default function DashboardLayout() {
           </div>
 
           <div className="topbar-right">
+            <Link
+              to="/"
+              className="btn btn-outline topbar-home-link"
+              aria-label="Halaman Awal"
+              title="Halaman Awal"
+            >
+              <Home size={16} aria-hidden="true" />
+              <span>Halaman Awal</span>
+            </Link>
+
             {/* Quick Eco Score Pill */}
             <div className="topbar-metric-pill" title="Eco Score dari transaksi terverifikasi">
               <Award size={15} className="text-gold" />
@@ -289,6 +303,7 @@ export default function DashboardLayout() {
               disabled={!currentUser.passportId}
               onClick={() => setShowQrModal(true)}
               className="btn btn-light-green topbar-qr-cta"
+              aria-label="Tampilkan QR Paspor"
             >
               <QrCode size={16} />
               <span className="d-none-mobile">QR Paspor</span>

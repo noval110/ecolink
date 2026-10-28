@@ -188,7 +188,7 @@ export default function WasteBankDiscovery() {
       <div className="container">
         
         {/* Header */}
-        <div className="section-header text-center" style={{ maxWidth: '800px', margin: '0 auto 3rem auto' }}>
+        <div className="section-header text-center public-list-header">
           {/* <div className="inline-badge" style={{ marginBottom: '1rem' }}>
             <MapPin size={14} className="text-emerald" />
             <span>Jaringan Mitra Terverifikasi</span>

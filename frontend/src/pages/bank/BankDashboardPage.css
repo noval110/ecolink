@@ -1,0 +1,143 @@
+.bank-page {
+  min-height: 100vh;
+  background: #031c12;
+  padding: 2rem 1.5rem 3rem;
+}
+
+.bank-container {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.bank-header,
+.bank-transaction-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.bank-header {
+  margin-bottom: 1.5rem;
+}
+
+.bank-header-main {
+  min-width: 0;
+  flex: 1 1 280px;
+}
+
+.bank-header .page-title {
+  margin-top: 0.65rem;
+}
+
+.bank-logout-btn {
+  flex-shrink: 0;
+}
+
+.bank-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.bank-transactions-panel {
+  background: rgba(8, 39, 25, 0.55);
+}
+
+.bank-status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.bank-transaction-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.bank-transaction-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.bank-transaction-title {
+  font-size: var(--text-card);
+}
+
+.bank-transaction-heading p,
+.bank-transaction-details small {
+  font-size: var(--text-secondary);
+  color: var(--text-muted);
+}
+
+.bank-transaction-details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.bank-transaction-details > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.bank-transaction-details strong {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bank-verify-btn {
+  margin-top: 1rem;
+}
+
+.bank-empty-state {
+  margin-top: 1rem;
+  padding: 2rem 1rem;
+}
+
+.bank-success {
+  color: #86efac;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 900px) {
+  .bank-transaction-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .bank-page {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  .bank-header-main {
+    flex-basis: 100%;
+  }
+
+  .bank-header-actions {
+    width: 100%;
+  }
+
+  .bank-header-actions > .btn {
+    flex: 1 1 auto;
+  }
+
+  .bank-transaction-details {
+    gap: 1rem 0.75rem;
+  }
+
+  .bank-verify-btn {
+    width: 100%;
+  }
+}

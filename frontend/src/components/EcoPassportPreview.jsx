@@ -46,21 +46,8 @@ export default function EcoPassportPreview() {
           </div>
 
           <div className="eco-passport-visual" style={{ display: 'flex', justifyContent: 'center' }}>
-            <div className="passport-card" style={{ 
-              background: 'rgba(255,255,255,0.03)', 
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '24px',
-              padding: '2.5rem',
-              width: '100%',
-              maxWidth: '400px',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              boxShadow: '0 25px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              {/* Glow effect */}
-              <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', background: 'var(--color-primary)', filter: 'blur(80px)', opacity: 0.2 }}></div>
+            <div className="passport-card landing-passport-preview">
+              <p className="preview-caption">Contoh Eco Passport · Data ilustrasi</p>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

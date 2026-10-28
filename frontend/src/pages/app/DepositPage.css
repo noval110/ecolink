@@ -15,26 +15,26 @@
   padding: 1rem;
   margin-bottom: 1.25rem;
   border-radius: 14px;
-  background: #f0fdf4;
-  border: 1px solid #d1fae5;
-  color: #14532d;
+  background: #082b1d;
+  border: 1px solid rgba(134, 239, 172, 0.2);
+  color: #dcfce7;
 }
 
 .deposit-prediction h2 {
   margin: 0.35rem 0;
-  font-size: 1.25rem;
+  font-size: var(--text-section);
 }
 
 .deposit-reclassify {
   margin-top: 0.75rem;
-  border: 1px solid #166534;
-  color: #14532d;
+  border: 1px solid rgba(134, 239, 172, 0.25);
+  color: var(--color-primary);
   background: transparent;
 }
 
 .deposit-fields {
   display: grid;
-  gap: 1.125rem;
+  gap: 1rem;
   border: 0;
   margin: 0;
   padding: 0;
@@ -72,13 +72,15 @@
 }
 
 .deposit-error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(127, 29, 29, 0.18);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  color: #fca5a5;
 }
 
 .deposit-success {
-  background: #dcfce7;
-  color: #166534;
+  background: rgba(22, 101, 52, 0.16);
+  border: 1px solid rgba(134, 239, 172, 0.2);
+  color: #86efac;
 }
 
 .deposit-page button:disabled {

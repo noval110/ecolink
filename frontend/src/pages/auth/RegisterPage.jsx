@@ -112,6 +112,7 @@ export default function RegisterPage() {
                   ? 'active'
                   : ''
               }`}
+              aria-pressed={role === 'user'}
               onClick={() =>
                 setRole('user')
               }
@@ -127,6 +128,7 @@ export default function RegisterPage() {
                   ? 'active'
                   : ''
               }`}
+              aria-pressed={role === 'org'}
               onClick={() =>
                 setRole('org')
               }
@@ -142,6 +144,7 @@ export default function RegisterPage() {
                   ? 'active'
                   : ''
               }`}
+              aria-pressed={role === 'bank'}
               onClick={() =>
                 setRole('bank')
               }
@@ -153,16 +156,7 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <div
-              style={{
-                marginBottom: '1rem',
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                background:
-                  'rgba(239, 68, 68, 0.1)',
-                color: '#ef4444',
-              }}
-            >
+            <div className="form-error" role="alert">
               {error}
             </div>
           )}
@@ -173,7 +167,7 @@ export default function RegisterPage() {
           >
 
             <div className="form-group">
-              <label>Nama Lengkap</label>
+              <label htmlFor="register-fullName">Nama Lengkap</label>
 
               <div className="input-with-icon">
                 <User
@@ -183,6 +177,8 @@ export default function RegisterPage() {
 
                 <input
                   type="text"
+                  id="register-fullName"
+                  autoComplete="name"
                   name="fullName"
                   placeholder="Budi Santoso"
                   value={form.fullName}
@@ -193,7 +189,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="form-group">
-              <label>Alamat Email</label>
+              <label htmlFor="register-email">Alamat Email</label>
 
               <div className="input-with-icon">
                 <Mail
@@ -203,6 +199,8 @@ export default function RegisterPage() {
 
                 <input
                   type="email"
+                  id="register-email"
+                  autoComplete="email"
                   name="email"
                   placeholder="nama@email.com"
                   value={form.email}
@@ -213,7 +211,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="form-group">
-              <label>Kata Sandi</label>
+              <label htmlFor="register-password">Kata Sandi</label>
 
               <div className="input-with-icon">
                 <Lock
@@ -223,6 +221,8 @@ export default function RegisterPage() {
 
                 <input
                   type="password"
+                  id="register-password"
+                  autoComplete="new-password"
                   name="password"
                   placeholder="Minimal 8 karakter"
                   value={form.password}

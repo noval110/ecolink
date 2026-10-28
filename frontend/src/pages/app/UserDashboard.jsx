@@ -167,13 +167,13 @@ export default function UserDashboard() {
         <div className="welcome-banner-content">
           <div className="welcome-badge">
             <Sparkles size={14} className="text-emerald" />
-            <span>Portofolio Hijau Terverifikasi • {user.role || 'Pengguna'}</span>
+            <span>Ringkasan aktivitas • {user.role || 'Pengguna'}</span>
           </div>
           <h1 className="welcome-title">
-            Halo, {user.full_name || 'Pengguna'}! 👋
+            Halo, {user.full_name || 'Pengguna'}!
           </h1>
           <p className="welcome-desc">
-            Kamu telah mendaur ulang <strong>{user.totalRecycledKg} kg</strong> sampah fisik dan menyelamatkan <strong>{user.co2SavedKg} kg CO₂e</strong> emisi karbon. Setiap aksimu tervalidasi timbangan resmi Bank Sampah mitra!
+            Total daur ulangmu <strong>{user.totalRecycledKg} kg</strong>, dengan estimasi pengurangan emisi <strong>{user.co2SavedKg} kg CO₂e</strong> dari setoran terverifikasi.
           </p>
         </div>
 
@@ -191,7 +191,7 @@ export default function UserDashboard() {
             </div>
             <Link to="/app/passport" className="btn btn-light-green btn-sm w-100 justify-center" style={{ marginTop: '0.65rem' }}>
               <QrCode size={14} />
-              <span>Buka Kartu Paspor Penuh</span>
+              <span>Buka Eco Passport</span>
             </Link>
           </div>
         </div>

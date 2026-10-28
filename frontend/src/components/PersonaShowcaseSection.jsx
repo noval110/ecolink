@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   User, Building2, Store, CheckCircle2, ArrowRight, 
-  QrCode, Award, TrendingUp, FileText, Scale, Layers,
+  QrCode, Scale,
   Trophy, Target, ShieldCheck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -162,7 +162,7 @@ export default function PersonaShowcaseSection() {
                     <span className="dot green" />
                   </div>
                   <span className="device-title">{current.mockup.title}</span>
-                  <span className="device-status">Sinkron Langsung</span>
+                  <span className="device-status">Data ilustrasi</span>
                 </div>
 
                 <div className="device-body">

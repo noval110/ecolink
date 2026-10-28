@@ -13,7 +13,7 @@ import TransparencySection from '../../components/TransparencySection';
 
 export default function LandingPage() {
   return (
-    <>
+    <div className="landing-page">
       {/* 1. Hero with Mockup, Live Ticker, and Stats */}
       <HeroSection />
 
@@ -46,6 +46,6 @@ export default function LandingPage() {
 
       {/* 11. Transparansi Data, Keamanan AES-256, & Metodologi */}
       <TransparencySection />
-    </>
+    </div>
   );
 }

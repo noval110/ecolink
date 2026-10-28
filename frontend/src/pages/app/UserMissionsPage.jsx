@@ -176,7 +176,7 @@ export default function UserMissionsPage() {
       <div
         className="level-hero-card"
         style={{
-          marginBottom: '2.5rem',
+          marginBottom: '1.5rem',
         }}
       >
 
@@ -236,7 +236,7 @@ export default function UserMissionsPage() {
       <div
         className="dash-card"
         style={{
-          marginBottom: '2.5rem',
+          marginBottom: '1.5rem',
         }}
       >
 

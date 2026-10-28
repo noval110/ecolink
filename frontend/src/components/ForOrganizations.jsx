@@ -58,7 +58,7 @@ export default function ForOrganizations() {
             
             {/* Widget with clean responsive behavior */}
             <div className="org-stat-widget">
-              <h4 className="widget-label">Progres Kampanye</h4>
+              <h4 className="widget-label">Contoh Progres Kampanye</h4>
               <p className="widget-value"><CountUp end={850} /> / <CountUp end={1000} /> kg</p>
               <div className="widget-progress-bar">
                 <div className="widget-progress-fill" style={{ width: '85%' }}></div>

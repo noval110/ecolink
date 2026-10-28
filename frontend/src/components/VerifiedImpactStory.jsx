@@ -3,12 +3,12 @@ import { User, Building, ShieldCheck, Award } from 'lucide-react';
 
 export default function VerifiedImpactStory() {
   return (
-    <section className="verified-impact-section" style={{ padding: '6rem 0', backgroundColor: 'var(--color-bg-dark)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+    <section className="verified-impact-section">
       <div className="container">
-        <div className="section-header" style={{ textAlign: 'center', marginBottom: '4rem' }}>
-          <h2 className="section-title">Semua Dampak <span style={{ color: 'var(--color-primary)' }}>100% Diverifikasi</span></h2>
-          <p className="section-desc" style={{ color: 'rgba(255,255,255,0.7)', maxWidth: '700px', margin: '0 auto', fontSize: '1.1rem' }}>
-            Di EcoLink, angka dampak lingkungan bukanlah klaim sepihak. Tidak ada input manual. Setiap aksi daur ulang harus melalui transaksi resmi di Bank Sampah untuk menjadi angka metrik.
+        <div className="section-header">
+          <h2 className="section-title">Dampak dari <span className="highlight-text">Setoran Terverifikasi</span></h2>
+          <p className="section-desc verification-desc">
+            Petugas Bank Sampah memverifikasi setoran sebelum kontribusinya menambah metrik dan progres kampanye.
           </p>
         </div>
 
@@ -46,7 +46,7 @@ export default function VerifiedImpactStory() {
           <div className="flow-step">
             {/* Mobile horizontal line between Step 3 and Step 4 */}
             <div className="flow-connector-mobile-h"></div>
-            <div className="flow-icon-wrapper glow-icon">
+            <div className="flow-icon-wrapper">
               <ShieldCheck size={32} color="var(--color-primary)" />
             </div>
             <h4 className="flow-title" style={{ color: 'var(--color-primary)' }}>3. Transaksi Sah</h4>

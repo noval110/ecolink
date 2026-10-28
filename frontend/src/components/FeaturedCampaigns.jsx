@@ -46,6 +46,7 @@ export default function FeaturedCampaigns() {
         <div className="section-header">
           <h2 className="section-title">Kampanye untuk Dampak Lebih Besar</h2>
           <p className="section-desc">Bergabung dengan berbagai inisiatif lingkungan dan ciptakan perubahan bersama.</p>
+          <p className="preview-caption">Contoh kampanye dan capaian. Jelajahi direktori untuk kampanye yang tersedia.</p>
         </div>
 
         <div className="campaign-grid">
@@ -55,7 +56,7 @@ export default function FeaturedCampaigns() {
               <div key={camp.id} className="campaign-card">
                 <div className="card-image-wrapper">
                   <img src={camp.image} alt={camp.title} className="card-image" />
-                  <div className="card-badge">Aktif</div>
+                  <div className="card-badge">Contoh kampanye</div>
                 </div>
                 <div className="card-content">
                   <h3 className="card-title">{camp.title}</h3>
@@ -84,7 +85,7 @@ export default function FeaturedCampaigns() {
                     </div>
                   </div>
                   
-                  <Link to={`/campaigns/${camp.id}`} className="btn btn-outline-green w-100 mt-auto">Lihat Detail Kampanye</Link>
+                  <Link to="/campaigns" className="btn btn-outline-green w-100 mt-auto">Jelajahi Kampanye</Link>
                 </div>
               </div>
             );

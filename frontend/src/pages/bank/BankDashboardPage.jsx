@@ -4,7 +4,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import {
   CheckCircle2,
@@ -12,6 +12,7 @@ import {
   ReceiptText,
   RefreshCw,
   ShieldCheck,
+  Home,
 } from 'lucide-react';
 
 import {
@@ -19,6 +20,8 @@ import {
   getStoredUser,
   verifyTransaction,
 } from '../../services/api';
+
+import './BankDashboardPage.css';
 
 function formatRupiah(value) {
   return Number(value || 0)
@@ -136,62 +139,39 @@ export default function BankDashboardPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#031c12',
-        color: 'white',
-        padding: 'clamp(1rem, 4vw, 3rem)',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-        }}
-      >
+    <main className="bank-page">
+      <div className="bank-container">
+        <header className="bank-header">
+          <div className="bank-header-main">
+            <div className="inline-badge-tiny">
+              <ShieldCheck size={14} />
+              <span>Bank Sampah EcoLink</span>
+            </div>
+            <h1 className="page-title">Dashboard Bank Sampah</h1>
+            <p className="page-sub">
+              Selamat datang,{' '}
+              <strong>
+                {user?.full_name || user?.name || 'Petugas Bank Sampah'}
+              </strong>
+            </p>
+          </div>
+          <div className="bank-header-actions">
+            <Link to="/" className="btn btn-outline">
+              <Home size={16} aria-hidden="true" />
+              Halaman Awal
+            </Link>
+            <button
+              type="button"
+              className="btn btn-outline bank-logout-btn"
+              onClick={handleLogout}
+            >
+              Keluar Akun
+            </button>
+          </div>
+        </header>
 
-        <div className="inline-badge-tiny">
-          <ShieldCheck size={14} />
-          <span>
-            Bank Sampah EcoLink
-          </span>
-        </div>
-
-        <h1
-          style={{
-            marginTop: '1rem',
-            marginBottom: '.5rem',
-          }}
-        >
-          Dashboard Bank Sampah
-        </h1>
-
-        <p>
-          Selamat datang,{' '}
-          <strong>
-            {user?.full_name ||
-              user?.name ||
-              'Petugas Bank Sampah'}
-          </strong>
-        </p>
-
-        <button
-          type="button"
-          className="btn btn-outline"
-          onClick={handleLogout}
-          style={{ marginTop: '1.25rem' }}
-        >
-          Keluar Akun
-        </button>
-
-        <div
-          className="dash-card"
-          style={{
-            marginTop: '2rem',
-          }}
-        >
-          <div className="dash-card-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
+        <section className="dash-card bank-transactions-panel">
+          <div className="dash-card-header">
 
             <div>
               <h3 className="dash-card-title">
@@ -217,15 +197,7 @@ export default function BankDashboardPage() {
 
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '.75rem',
-              margin:
-                '1.5rem 0',
-            }}
-          >
+          <div className="bank-status-filters" aria-label="Filter status transaksi">
             <button
               type="button"
               disabled={verifyingId !== null}
@@ -275,21 +247,16 @@ export default function BankDashboardPage() {
             </button>
           </div>
 
-          {success && <p role="status">{success}</p>}
+          {success && <p className="bank-success" role="status">{success}</p>}
 
           {loading ? (
             <p role="status">
               Memuat transaksi...
             </p>
           ) : error ? (
-            <p role="alert">{error}</p>
+            <p className="form-error" role="alert">{error}</p>
           ) : transactions.length === 0 ? (
-            <div
-              className="discovery-empty-state"
-              style={{
-                marginTop: '1rem',
-              }}
-            >
+            <div className="discovery-empty-state bank-empty-state">
               <ReceiptText size={30} />
 
               <h4>
@@ -303,41 +270,16 @@ export default function BankDashboardPage() {
               </p>
             </div>
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gap: '1rem',
-              }}
-            >
+            <div className="bank-transaction-list">
               {transactions.map(
                 (transaction) => (
                   <div
                     key={transaction.id}
-                    style={{
-                      border:
-                        '1px solid rgba(255,255,255,.1)',
-                      borderRadius: '16px',
-                      padding: '1.25rem',
-                      background:
-                        'rgba(0,0,0,.15)',
-                    }}
+                    className="bank-transaction-card"
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent:
-                          'space-between',
-                        gap: '1rem',
-                        flexWrap: 'wrap',
-                      }}
-                    >
+                    <div className="bank-transaction-heading">
                       <div>
-                        <strong
-                          style={{
-                            fontSize:
-                              '1.05rem',
-                          }}
-                        >
+                        <strong className="bank-transaction-title">
                           Transaksi #
                           {transaction.id}
                         </strong>
@@ -372,15 +314,7 @@ export default function BankDashboardPage() {
                       </span>
                     </div>
 
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns:
-                          'repeat(auto-fit, minmax(min(160px, 100%), 1fr))',
-                        gap: '1rem',
-                        marginTop: '1rem',
-                      }}
-                    >
+                    <div className="bank-transaction-details">
                       <div>
                         <small>
                           Berat
@@ -437,11 +371,7 @@ export default function BankDashboardPage() {
                       'pending' && (
                       <button
                         type="button"
-                        className="btn btn-light-green"
-                        style={{
-                          marginTop:
-                            '1.25rem',
-                        }}
+                        className="btn btn-light-green bank-verify-btn"
                         disabled={
                           verifyingId !== null
                         }
@@ -467,9 +397,9 @@ export default function BankDashboardPage() {
             </div>
           )}
 
-        </div>
+        </section>
 
       </div>
-    </div>
+    </main>
   );
 }

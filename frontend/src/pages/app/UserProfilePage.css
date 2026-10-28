@@ -1,0 +1,72 @@
+.profile-account-summary {
+  margin-top: 1.5rem;
+  container-type: inline-size;
+}
+
+.profile-account-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem 1rem;
+  margin-top: 1.25rem;
+}
+
+.profile-account-summary-item {
+  min-width: 0;
+}
+
+.profile-account-summary-item:nth-child(even) {
+  padding-left: 1rem;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.profile-account-summary-item dt {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.5rem;
+  color: var(--text-muted);
+  font-size: var(--text-secondary);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.profile-account-summary-item dt svg {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.profile-account-summary-item dd {
+  margin: 0.5rem 0 0;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.profile-account-summary-item .profile-account-summary-date {
+  padding-top: 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.profile-account-summary-unit {
+  color: var(--text-muted);
+  font-size: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+@container (min-width: 640px) {
+  .profile-account-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .profile-account-summary-item:not(:first-child) {
+    padding-left: 1rem;
+    border-left: 1px solid var(--border-subtle);
+  }
+}

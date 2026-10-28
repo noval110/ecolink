@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Lock, Leaf } from 'lucide-react';
+import { Leaf } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function FooterCTA() {
@@ -11,7 +11,7 @@ export default function FooterCTA() {
             Jadikan setiap aksi daur ulangmu<br />berdampak <span className="highlight-text">nyata.</span>
           </h2>
           <p className="cta-sub">
-            Bergabung dengan ribuan orang lainnya yang telah mengubah sampah menjadi dampak lingkungan terukur.
+            Catat setoranmu, ikuti kampanye, dan pantau kontribusi lingkungan dalam satu tempat.
           </p>
           <div className="cta-btn-wrap">
             <Link to="/register" className="btn btn-light-green cta-btn">

@@ -108,6 +108,7 @@ export default function LoginPage() {
                   ? 'active'
                   : ''
               }`}
+              aria-pressed={role === 'user'}
               onClick={() =>
                 setRole('user')
               }
@@ -123,6 +124,7 @@ export default function LoginPage() {
                   ? 'active'
                   : ''
               }`}
+              aria-pressed={role === 'org'}
               onClick={() =>
                 setRole('org')
               }
@@ -138,6 +140,7 @@ export default function LoginPage() {
                   ? 'active'
                   : ''
               }`}
+              aria-pressed={role === 'bank'}
               onClick={() =>
                 setRole('bank')
               }
@@ -149,16 +152,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div
-              style={{
-                marginBottom: '1rem',
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                background:
-                  'rgba(239, 68, 68, 0.1)',
-                color: '#ef4444',
-              }}
-            >
+            <div className="form-error" role="alert">
               {error}
             </div>
           )}
@@ -169,7 +163,7 @@ export default function LoginPage() {
           >
 
             <div className="form-group">
-              <label>
+              <label htmlFor="login-email">
                 Alamat Email
               </label>
 
@@ -180,6 +174,8 @@ export default function LoginPage() {
                 />
 
                 <input
+                  id="login-email"
+                  autoComplete="email"
                   type="email"
                   placeholder="nama@email.com"
                   value={email}
@@ -196,7 +192,7 @@ export default function LoginPage() {
             <div className="form-group">
 
               <div className="label-row">
-                <label>
+                <label htmlFor="login-password">
                   Kata Sandi
                 </label>
               </div>
@@ -209,6 +205,8 @@ export default function LoginPage() {
                 />
 
                 <input
+                  id="login-password"
+                  autoComplete="current-password"
                   type="password"
                   placeholder="••••••••"
                   value={password}
