@@ -115,12 +115,18 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: #166534;
-  border: 1px solid rgba(134, 239, 172, 0.35);
+  background: rgba(150, 60, 255, 0.12);
+  border: 1px solid rgba(193, 107, 255, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: none;
+}
+
+.brand-logo-icon {
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
 }
 
 .logo-leaf {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Leaf,
   LayoutDashboard,
   QrCode,
   ReceiptText,
@@ -145,7 +144,7 @@ export default function DashboardLayout() {
         <div className="sidebar-brand-box">
           <Link to="/" className="sidebar-logo">
             <div className="logo-emblem">
-              <Leaf size={18} className="logo-leaf" />
+              <img src="/favicon.svg?v=ecolink-2" className="brand-logo-icon" width={24} height={24} alt="" aria-hidden="true" />
             </div>
             <span className="logo-brand">
               Eco<span className="logo-accent">Link</span>
