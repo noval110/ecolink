@@ -1,6 +1,6 @@
 import React from 'react';
-import { Leaf } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import BrandMark from './BrandMark';
 
 export default function FooterCTA() {
   return (
@@ -27,7 +27,7 @@ export default function FooterCTA() {
             <div className="footer-brand-col">
               <div className="footer-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span className="footer-leaf" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                  <Leaf size={20} color="#86efac" />
+                  <BrandMark size={24} />
                 </span> EcoLink
               </div>
               <p className="footer-about-text">

@@ -17,6 +17,7 @@ import {
 import {
   getPassport,
 } from '../../services/api';
+import BrandMark from '../../components/BrandMark';
 
 function formatDate(value) {
   if (!value) return '-';
@@ -177,10 +178,7 @@ export default function EcoPassportPage() {
 
               <div className="dp-brand-row">
                 <div className="logo-emblem-small">
-                  <Leaf
-                    size={14}
-                    className="text-emerald"
-                  />
+                  <BrandMark size={20} />
                 </div>
 
                 <span className="dp-brand-name">

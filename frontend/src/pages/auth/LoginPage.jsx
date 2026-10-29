@@ -6,7 +6,6 @@ import {
 } from 'react-router-dom';
 
 import {
-  Leaf,
   ArrowRight,
   Mail,
   Lock,
@@ -20,6 +19,7 @@ import {
   saveAuth,
 } from '../../services/api';
 import { getHomeForRole } from '../../components/ProtectedRoute';
+import BrandMark from '../../components/BrandMark';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -82,10 +82,7 @@ export default function LoginPage() {
       <div className="auth-container">
 
         <Link to="/" className="auth-logo">
-          <Leaf
-            className="logo-icon"
-            size={28}
-          />
+          <BrandMark className="logo-icon" />
           <span>EcoLink</span>
         </Link>
 

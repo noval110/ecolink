@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Menu, X, ArrowRight } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import AccountMenu from './AccountMenu';
+import BrandMark from './BrandMark';
 import {
   isAuthenticated,
   getStoredUser,
@@ -47,7 +48,7 @@ export default function Navbar() {
         {/* Brand Logo */}
         <Link to="/" className="nav-logo" onClick={() => setIsOpen(false)}>
           <div className="logo-emblem">
-            <img src="/favicon.svg?v=ecolink-2" className="brand-logo-icon" width={24} height={24} alt="" aria-hidden="true" />
+            <BrandMark />
           </div>
           <span className="logo-brand">
             Eco<span className="logo-accent">Link</span>
