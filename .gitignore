@@ -3,3 +3,5 @@
 !.env.example
 
 .agents/
+video/
+seed_reference.sql
